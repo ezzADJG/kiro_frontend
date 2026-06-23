@@ -1,0 +1,25 @@
+{
+  "restaurant": {
+    "label": "Restaurante",
+    "stockSchema": {
+      "campos": [
+        { "key": "nombre", "tipo": "texto", "requerido": true },
+        { "key": "precio", "tipo": "numero", "requerido": true },
+        { "key": "categoria", "tipo": "texto", "requerido": false },
+        { "key": "disponible", "tipo": "booleano", "requerido": true }
+      ]
+    }
+  },
+  "tienda_ropa": {
+    "label": "Tienda de ropa",
+    "stockSchema": {
+      "campos": [
+        { "key": "nombre", "tipo": "texto", "requerido": true },
+        { "key": "precio", "tipo": "numero", "requerido": true },
+        { "key": "talla", "tipo": "texto", "requerido": true },
+        { "key": "color", "tipo": "texto", "requerido": false },
+        { "key": "stock", "tipo": "numero", "requerido": true }
+      ]
+    }
+  }
+}

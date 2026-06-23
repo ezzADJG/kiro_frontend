@@ -1,0 +1,393 @@
+{
+  "businessConversations": {
+    "b_002": {
+      "conv_b_002_c51931138292": {
+        "assignedTo": "",
+        "channel": "whatsapp",
+        "customerId": "51931138292",
+        "customerName": "‎",
+        "customerPhone": "51931138292",
+        "lastMessageAt": 1781239528000,
+        "lastMessageDirection": "inbound",
+        "lastMessageText": "Que vendes",
+        "mode": "bot",
+        "priority": "normal",
+        "status": "open",
+        "unreadCount": 1
+      },
+      "conv_b_002_c51954748565": {
+        "assignedTo": "",
+        "channel": "whatsapp",
+        "customerId": "51954748565",
+        "customerName": "Aldair",
+        "customerPhone": "51954748565",
+        "lastMessageAt": 1781231253434,
+        "lastMessageDirection": "outbound",
+        "lastMessageText": "Estoy a tu disposición para ayudarte. ¿Hay algo más en lo que pueda asistirte?",
+        "mode": "bot",
+        "priority": "normal",
+        "status": "open",
+        "unreadCount": 1
+      }
+    }
+  },
+  "businesses": {
+    "b_001": {
+      "phone_number_id": 1184028654785765,
+      "country": "PE",
+      "createdAt": 1760000000000,
+      "industry": "restaurant",
+      "name": "Test Negocio",
+      "slug": "el-buen-sabor",
+      "status": "active",
+      "timezone": "America/Lima",
+      "updatedAt": 1760000000000
+    }
+  },
+  "conversationMessages": {
+    "conv_b_002_c51931138292": {
+      "-Ouu1CBv0PHAKSX_JSTJ": {
+        "businessId": "b_002",
+        "content": "hola",
+        "createdAt": 1781237595000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5MzExMzgyOTIVAgASGBYzRUIwRTY4QTUwRjU2QkM2RUJENjhBAA==",
+        "senderId": "51931138292",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      },
+      "-Ouu1PaxBR-hihsH-rxY": {
+        "businessId": "b_002",
+        "content": "hola",
+        "createdAt": 1781237655000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5MzExMzgyOTIVAgASGBYzRUIwMzEwOURDN0Y1QTJFRjU1Qzg1AA==",
+        "senderId": "51931138292",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      },
+      "-Ouu1eXN2fTQQ1WawNyn": {
+        "businessId": "b_002",
+        "content": "Que vendes",
+        "createdAt": 1781237720000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5MzExMzgyOTIVAgASGBYzRUIwQUY1N0U2MjU2OEEzNTNENjkzAA==",
+        "senderId": "51931138292",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      },
+      "-Ouu5IjzdTPcsjqJHaei": {
+        "businessId": "b_002",
+        "content": "Hola, cual es tu horario de atencion",
+        "createdAt": 1781238675000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5MzExMzgyOTIVAgASGCBBQzc0RjE1MzI4MkJDNEI0N0I1RTRGMTVFRjhERjY1QQA=",
+        "senderId": "51931138292",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      },
+      "-Ouu5XTLPDZNIkAGpSgs": {
+        "businessId": "b_002",
+        "content": "hola",
+        "createdAt": 1781238736000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5MzExMzgyOTIVAgASGBYzRUIwRUJBNDgyNEE0MTQ1QTY3RUNBAA==",
+        "senderId": "51931138292",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      },
+      "-Ouu5XoOwqBhR3QQ_3LH": {
+        "businessId": "b_002",
+        "content": "¡Hola! ¿En qué puedo ayudarte hoy?",
+        "createdAt": 1781238738278,
+        "direction": "outbound",
+        "metaMessageId": "",
+        "senderId": "1184028654785765",
+        "senderType": "bot",
+        "status": "sent",
+        "type": "text"
+      },
+      "-Ouu7TBECbZg1tawec3X": {
+        "businessId": "b_002",
+        "content": "Buenas nochws",
+        "createdAt": 1781239242000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5MzExMzgyOTIVAgASGCBBQzE3NDBBMzU0RDQwNDYwNTJDQjc5OEIyQjI0N0IxQQA=",
+        "senderId": "51931138292",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      },
+      "-Ouu7TmRefvg34qKp_Zg": {
+        "businessId": "b_002",
+        "content": "Buenas noches.",
+        "createdAt": 1781239246076,
+        "direction": "outbound",
+        "metaMessageId": "",
+        "senderId": "1184028654785765",
+        "senderType": "bot",
+        "status": "sent",
+        "type": "text"
+      },
+      "-Ouu8S0wGn_rp25f8FQG": {
+        "businessId": "b_002",
+        "content": "Buenos dias",
+        "createdAt": 1781239499000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5MzExMzgyOTIVAgASGCBBQ0IwRTYwRUM1RjE3NjcwMjZGRTA1MjUxMUEzNThGMAA=",
+        "senderId": "51931138292",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      },
+      "-Ouu8SYGYfmFPfJK9vGk": {
+        "businessId": "b_002",
+        "content": "¡Buenos días!",
+        "createdAt": 1781239503102,
+        "direction": "outbound",
+        "metaMessageId": "",
+        "senderId": "1184028654785765",
+        "senderType": "bot",
+        "status": "sent",
+        "type": "text"
+      },
+      "-Ouu8YqnJX66XDPOT5f5": {
+        "businessId": "b_002",
+        "content": "Que vendes",
+        "createdAt": 1781239528000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5MzExMzgyOTIVAgASGCBBQzRFOTRBMjcxQTk0QzAwNEQ1N0IzN0U5RDJBN0IwMgA=",
+        "senderId": "51931138292",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      }
+    },
+    "conv_b_002_c51954748565": {
+      "-OuL0pu6Nn-KKRUiqr8Y": {
+        "businessId": "b_002",
+        "createdAt": 1780633524000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5NTQ3NDg1NjUVAgASGBYzRUIwNDFBMzYwQUQ1NUQxQkM4Qjg2AA==",
+        "senderId": "51954748565",
+        "senderType": "customer",
+        "status": "received",
+        "text": "hola",
+        "type": "text"
+      },
+      "-OuL1X0wm06n_evBWT5K": {
+        "businessId": "b_002",
+        "createdAt": 1780633705000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5NTQ3NDg1NjUVAgASGBQzQTVFQ0E0MjlCMUVGQjY5NTE5RgA=",
+        "senderId": "51954748565",
+        "senderType": "customer",
+        "status": "received",
+        "text": "Hola",
+        "type": "text"
+      },
+      "-OuL1kg0OR10hGIyWSS-": {
+        "businessId": "b_002",
+        "createdAt": 1780633765000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5NTQ3NDg1NjUVAgASGBQzQTczRTQ0Q0U3MkFEQTJCMUQ4NAA=",
+        "senderId": "51954748565",
+        "senderType": "customer",
+        "status": "received",
+        "text": "Qué tal como estás",
+        "type": "text"
+      },
+      "-OuL7AnZh4T7UF2CiEc9": {
+        "businessId": "b_002",
+        "createdAt": 1780635187000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5NTQ3NDg1NjUVAgASGBQzQTc1N0VGMzcyRkY4RTQ2NERGNgA=",
+        "senderId": "51954748565",
+        "senderType": "customer",
+        "status": "received",
+        "ph": "Hola",
+        "type": "text"
+      },
+      "-OuLBG5qRNOtQu3ilnUN": {
+        "businessId": "b_002",
+        "createdAt": 1780636250000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5NTQ3NDg1NjUVAgASGBQzQURGMEU2MUE2NjExRTRFQjVFQgA=",
+        "senderId": "51954748565",
+        "senderType": "customer",
+        "status": "received",
+        "text": "[image]",
+        "type": "image"
+      },
+      "-OuLBGJW9hb7GY9DFRK9": {
+        "businessId": "b_002",
+        "createdAt": 1780636259000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5NTQ3NDg1NjUVAgASGBQzQThFMTFCNEU2Q0U2QkIzNTQ0OQA=",
+        "senderId": "51954748565",
+        "senderType": "customer",
+        "status": "received",
+        "text": "Hola",
+        "type": "text"
+      },
+      "-Outcj90wqGzGBeSBGMA": {
+        "businessId": "b_002",
+        "content": "hola cual es el número de contacto",
+        "createdAt": 1781230922000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5NTQ3NDg1NjUVAgASGBYzRUIwNEE4RkM2OUIxQ0EzQzM2OEI3AA==",
+        "senderId": "51954748565",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      },
+      "-Outcj_m3JsCKRy3kbJ7": {
+        "businessId": "b_002",
+        "content": "Hola, para darte el número de contacto, necesito usar mi herramienta de búsqueda interna. Un momento por favor.\n\nEl número de contacto es **+34 912 345 678**.",
+        "createdAt": 1781230926240,
+        "direction": "outbound",
+        "metaMessageId": "",
+        "senderId": "1184028654785765",
+        "senderType": "bot",
+        "status": "sent",
+        "type": "text"
+      },
+      "-OutdpEesJe23Fdhht8F": {
+        "businessId": "b_002",
+        "content": "hola su dirección?",
+        "createdAt": 1781231211000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5NTQ3NDg1NjUVAgASGBYzRUIwOUQwNDBDMDM5NzFBOUY0RDhGAA==",
+        "senderId": "51954748565",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      },
+      "-OutdpeflZU2PRnaLtwE": {
+        "businessId": "b_002",
+        "content": "Estoy aquí para ayudarte. Por favor, permíteme un momento para buscar la dirección de nuestro negocio.",
+        "createdAt": 1781231213273,
+        "direction": "outbound",
+        "metaMessageId": "",
+        "senderId": "1184028654785765",
+        "senderType": "bot",
+        "status": "sent",
+        "type": "text"
+      },
+      "-OutdyeFqf7GZUSKKnD6": {
+        "businessId": "b_002",
+        "content": "número de contacto?",
+        "createdAt": 1781231249000,
+        "direction": "inbound",
+        "metaMessageId": "wamid.HBgLNTE5NTQ3NDg1NjUVAgASGBYzRUIwRTMwNTY1MDlBNEMyRTZFQ0E1AA==",
+        "senderId": "51954748565",
+        "senderType": "customer",
+        "status": "received",
+        "type": "text"
+      },
+      "-OutdzSv_U4xe18wM1pU": {
+        "businessId": "b_002",
+        "content": "Estoy a tu disposición para ayudarte. ¿Hay algo más en lo que pueda asistirte?",
+        "createdAt": 1781231253434,
+        "direction": "outbound",
+        "metaMessageId": "",
+        "senderId": "1184028654785765",
+        "senderType": "bot",
+        "status": "sent",
+        "type": "text"
+      }
+    }
+  },
+  "conversations": {
+    "conv_b_002_c51931138292": {
+      "assignedTo": "",
+      "businessId": "b_002",
+      "channel": "whatsapp",
+      "createdAt": 1781239528000,
+      "customerId": "id personalizado o waId: 51931138292",
+      "lastMessageAt": 1781239528000,
+      "lastMessageDirection": "inbound",
+      "lastMessageText": "Que vendes",
+      "mode": "bot",
+      "priority": "normal",
+      "status": "open",
+      "unreadCount": 1,
+      "updatedAt": 1781239528000
+    },
+    "conv_b_002_c51954748565": {
+      "assignedTo": "",
+      "businessId": "b_002",
+      "channel": "whatsapp",
+      "createdAt": 1781231249000,
+      "customerId": "id personalizado o waId: 51954748565",
+      "lastMessageAt": 1781231253434,
+      "lastMessageDirection": "outbound",
+      "lastMessageText": "Estoy a tu disposición para ayudarte. ¿Hay algo más en lo que pueda asistirte?",
+      "mode": "bot",
+      "priority": "normal",
+      "status": "open",
+      "unreadCount": 1,
+      "updatedAt": 1781231253434
+    }
+  },
+  "customers": {
+    "b_002": {
+      "51931138292": {
+        "displayName": "‎",
+        "firstSeenAt": 0,
+        "lastSeenAt": 0,
+        "profileName": "‎",
+        "source": "whatsapp"
+      },
+      "51954748565": {
+        "customerId": "",
+        "displayName": "Aldair",
+        "firstSeenAt": 0,
+        "lastSeenAt": 0,
+        "phone": "",
+        "profileName": "Aldair",
+        "source": "whatsapp"
+      }
+    }
+  },
+  "phones": {
+    "101010100101": {
+      "business_id": "b_001",
+      "phone_number": "+51987654321"
+    },
+    "1184028654785765": {
+      "business_id": "b_002",
+      "phone_number": "+51987654"
+    }
+  },
+  "businessTypes": {
+    "restaurant": {
+      "label": "Restaurante",
+      "stockSchema": {
+        "campos": [
+          { "key": "nombre", "tipo": "texto", "requerido": true },
+          { "key": "precio", "tipo": "numero", "requerido": true },
+          { "key": "categoria", "tipo": "texto", "requerido": false },
+          { "key": "disponible", "tipo": "booleano", "requerido": true }
+        ]
+      }
+    },
+    "tienda_ropa": {
+      "label": "Tienda de ropa",
+      "stockSchema": {
+        "campos": [
+          { "key": "nombre", "tipo": "texto", "requerido": true },
+          { "key": "precio", "tipo": "numero", "requerido": true },
+          { "key": "talla", "tipo": "texto", "requerido": true },
+          { "key": "color", "tipo": "texto", "requerido": false },
+          { "key": "stock", "tipo": "numero", "requerido": true }
+        ]
+      }
+    }
+  }
+}

@@ -9,6 +9,7 @@ import ConfigurarNegocio from '@/pages/ConfigurarNegocio'
 import Stock from '@/pages/Stock'
 import Chats from '@/pages/Chats'
 import Canales from '@/pages/Canales'
+import AdminCanales from '@/pages/AdminCanales'
 import RutaProtegida from '@/components/RutaProtegida'
 import DashboardLayout from '@/components/DashboardLayout'
 
@@ -28,6 +29,7 @@ export default function App() {
                 <Route path="/dashboard/stock" element={<Stock />} />
                 <Route path="/dashboard/chats" element={<Chats />} />
                 <Route path="/dashboard/canales" element={<Canales />} />
+                <Route path="/dashboard/admin/canales" element={<AdminCanales />} />
               </Route>
             </Route>
           </Routes>

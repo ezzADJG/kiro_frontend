@@ -13,6 +13,22 @@ export function userBusinessRef(uid: string) {
   return ref(db, `userBusinesses/${uid}`)
 }
 
+export function phonesNoMetaIdRef() {
+  return ref(db, 'phonesNoMetaId')
+}
+
+export function phoneNoMetaIdRef(id: string) {
+  return ref(db, `phonesNoMetaId/${id}`)
+}
+
+export function phonesRef() {
+  return ref(db, 'phones')
+}
+
+export function phoneRef(id: string) {
+  return ref(db, `phones/${id}`)
+}
+
 export function subscribeConversations(
   businessId: string,
   callback: (data: Record<string, any> | null) => void

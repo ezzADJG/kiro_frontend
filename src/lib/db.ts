@@ -1,4 +1,12 @@
-import { ref, onValue, off, type Unsubscribe } from 'firebase/database'
+import {
+  ref,
+  query,
+  orderByChild,
+  equalTo,
+  onValue,
+  off,
+  type Unsubscribe,
+} from 'firebase/database'
 import { db } from './firebase'
 
 export function businessConversationsRef(businessId: string) {
@@ -29,6 +37,18 @@ export function phoneRef(id: string) {
   return ref(db, `phones/${id}`)
 }
 
+export function businessUsersRef(businessId: string) {
+  return ref(db, `businessUsers/${businessId}`)
+}
+
+export function invitationsRef(businessId: string) {
+  return ref(db, `invitations/${businessId}`)
+}
+
+export function invitationTokenRef(token: string) {
+  return ref(db, `invitationTokens/${token}`)
+}
+
 export function subscribeConversations(
   businessId: string,
   callback: (data: Record<string, any> | null) => void
@@ -48,6 +68,24 @@ export function subscribeMessages(
   callback: (data: Record<string, any> | null) => void
 ): Unsubscribe {
   const dbRef = conversationMessagesRef(conversationId)
+  const unsubscribe = onValue(dbRef, (snapshot) => {
+    callback(snapshot.val())
+  })
+  return () => {
+    off(dbRef)
+    unsubscribe()
+  }
+}
+
+export function subscribeBusinessPhones(
+  businessId: string,
+  callback: (data: Record<string, any> | null) => void
+): Unsubscribe {
+  const dbRef = query(
+    ref(db, 'phones'),
+    orderByChild('business_id'),
+    equalTo(businessId)
+  )
   const unsubscribe = onValue(dbRef, (snapshot) => {
     callback(snapshot.val())
   })

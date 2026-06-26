@@ -28,5 +28,6 @@ export async function loginConGoogle() {
 }
 
 export async function cerrarSesion() {
+  localStorage.removeItem('kiro_active_business_id')
   await signOut(auth)
 }

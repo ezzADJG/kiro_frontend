@@ -157,7 +157,12 @@ export default function Chats() {
     if (!activeBusinessId || !activeConversationId || !firebaseUser) return
 
     const customerId = activeConversation?.customerId || ''
-    const phoneNumberId = phones.length > 0 ? phones[0].phoneNumberId : ''
+
+    const phoneNumberId = activeConversation?.phoneNumberId
+      || (selectedPhoneId !== 'all' ? selectedPhoneId : '')
+      || (phones.length > 0 ? phones[0].phoneNumberId : '')
+
+    console.log('[Chats] sendAgentMessage:', { phoneNumberId, customerId, conversationId: activeConversationId })
 
     await sendAgentMessage(
       activeBusinessId,

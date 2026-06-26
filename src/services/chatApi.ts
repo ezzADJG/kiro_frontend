@@ -61,6 +61,7 @@ export async function sendAgentMessage(
   waId: string,
   text: string
 ) {
+  console.log('[chatApi] sendAgentMessage payload:', { businessId, conversationId, phoneNumberId, waId, text })
   return post('/agent/message', {
     businessId,
     conversationId,

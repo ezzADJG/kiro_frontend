@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { onValue, off, ref } from 'firebase/database'
-import { db } from '@/lib/firebase'
+import { onValue, off } from 'firebase/database'
 import { useBusiness } from '@/context/BusinessContext'
 import { registrarTelefono } from '@/services/channelService'
 import { phonesNoMetaIdRef, phonesRef } from '@/lib/db'
@@ -30,7 +29,9 @@ export default function Canales() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [pendingRecord, setPendingRecord] = useState<PhoneNoMetaId | null>(null)
-  const [connectedChannels, setConnectedChannels] = useState<PhoneChannel[]>([])
+  const [connectedChannels, setConnectedChannels] = useState<
+    (PhoneChannel & { id: string })[]
+  >([])
   const [error, setError] = useState('')
 
   const hasPending = pendingRecord !== null

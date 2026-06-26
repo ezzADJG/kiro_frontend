@@ -6,7 +6,9 @@ import {
   type ReactNode,
 } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { obtenerNegociosDeUsuario } from '@/services/businessService'
+import { ref, onValue } from 'firebase/database'
+import { db } from '@/lib/firebase'
+import type { UserBusinessMembership } from '@/types/business'
 
 interface BusinessContextValue {
   activeBusinessId: string | null
@@ -14,7 +16,7 @@ interface BusinessContextValue {
   tieneNegocio: boolean
   businessIds: string[]
   setActiveBusinessId: (businessId: string | null) => void
-  refrescarNegocios: () => Promise<void>
+  refrescarNegocios: () => void
 }
 
 const BusinessContext = createContext<BusinessContextValue | undefined>(
@@ -31,7 +33,9 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   )
   const [loadingBusiness, setLoadingBusiness] = useState(true)
 
-  async function cargarNegocios() {
+  useEffect(() => {
+    if (loadingAuth) return
+
     if (!firebaseUser) {
       setBusinessIds([])
       setActiveBusinessIdState(null)
@@ -40,28 +44,32 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     }
 
     setLoadingBusiness(true)
-    const negocios = await obtenerNegociosDeUsuario(firebaseUser.uid)
-    const ids = Object.keys(negocios).filter((id) => negocios[id]?.active)
-    setBusinessIds(ids)
 
-    if (ids.length > 0) {
-      const actualSigueSiendoValido =
-        activeBusinessId && ids.includes(activeBusinessId)
-      if (!actualSigueSiendoValido) {
-        setActiveBusinessIdState(ids[0])
+    const userBusinessesRef = ref(db, `userBusinesses/${firebaseUser.uid}`)
+
+    const unsubscribe = onValue(userBusinessesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val() as Record<string, UserBusinessMembership>
+        const ids = Object.keys(data).filter((id) => data[id]?.active)
+        setBusinessIds(ids)
+
+        if (ids.length > 0) {
+          const storedId = localStorage.getItem(STORAGE_KEY)
+          const sigueSiendoValido = storedId && ids.includes(storedId)
+          if (!sigueSiendoValido) {
+            setActiveBusinessIdState(ids[0])
+          }
+        } else {
+          setActiveBusinessIdState(null)
+        }
+      } else {
+        setBusinessIds([])
+        setActiveBusinessIdState(null)
       }
-    } else {
-      setActiveBusinessIdState(null)
-    }
+      setLoadingBusiness(false)
+    })
 
-    setLoadingBusiness(false)
-  }
-
-  useEffect(() => {
-    if (!loadingAuth) {
-      cargarNegocios()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => unsubscribe()
   }, [firebaseUser, loadingAuth])
 
   function setActiveBusinessId(businessId: string | null) {
@@ -81,7 +89,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         tieneNegocio: businessIds.length > 0,
         businessIds,
         setActiveBusinessId,
-        refrescarNegocios: cargarNegocios,
+        refrescarNegocios: () => {},
       }}
     >
       {children}

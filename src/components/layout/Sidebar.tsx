@@ -1,15 +1,25 @@
-import { NavLink } from 'react-router-dom'
-import { Home, Store, Package, MessageCircle, Cable } from 'lucide-react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { Home, Store, Package, MessageSquareMore, Cable, Users, LogOut } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 
 const navItems = [
   { to: '/dashboard', icon: Home, label: 'Inicio' },
   { to: '/dashboard/negocio', icon: Store, label: 'Negocio' },
   { to: '/dashboard/stock', icon: Package, label: 'Stock' },
-  { to: '/dashboard/chats', icon: MessageCircle, label: 'Chats' },
+  { to: '/dashboard/equipo', icon: Users, label: 'Equipo' },
+  { to: '/dashboard/chats', icon: MessageSquareMore, label: 'Chats' },
   { to: '/dashboard/canales', icon: Cable, label: 'Canales' },
 ] as const
 
 export default function Sidebar() {
+  const { cerrarSesion } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await cerrarSesion()
+    navigate('/login')
+  }
+
   return (
     <aside className="flex h-full w-16 flex-col items-center gap-4 border-r border-border bg-white py-4 dark:bg-neutral-950">
       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-900 text-sm font-bold text-white dark:bg-white dark:text-neutral-900">
@@ -34,6 +44,13 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </div>
+      <button
+        onClick={handleLogout}
+        className="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-red-500 dark:hover:bg-neutral-800 dark:hover:text-red-400"
+        title="Cerrar sesión"
+      >
+        <LogOut className="h-5 w-5" />
+      </button>
     </aside>
   )
 }

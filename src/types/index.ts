@@ -48,7 +48,7 @@ export interface BusinessUser {
   joinedAt: number
 }
 
-export type BusinessRole = 'owner' | 'agent' | 'admin'
+export type BusinessRole = 'owner' | 'agente'
 
 // ─── Customer ──────────────────────────────────────────────────
 export interface Customer {
@@ -75,6 +75,7 @@ export interface BusinessConversation {
   priority: ConversationPriority
   status: ConversationStatus
   unreadCount: number
+  phoneNumberId?: string
 }
 
 export interface Conversation {

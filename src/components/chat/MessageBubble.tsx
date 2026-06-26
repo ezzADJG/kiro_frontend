@@ -13,16 +13,24 @@ interface MessageBubbleProps {
 
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isInbound = message.direction === 'inbound'
+  const isAgent = message.senderType === 'agent'
 
   return (
     <div
-      className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}
+      className={`flex flex-col ${isInbound ? 'items-start' : 'items-end'}`}
     >
+      {isAgent && (
+        <span className="mb-1 px-1 text-[10px] text-neutral-400">
+          {message.senderName || 'Agente'}
+        </span>
+      )}
       <div
         className={`max-w-[70%] rounded-2xl px-4 py-2 ${
           isInbound
             ? 'rounded-bl-sm bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white'
-            : 'rounded-br-sm bg-blue-600 text-white'
+            : isAgent
+              ? 'rounded-br-sm bg-green-600 text-white'
+              : 'rounded-br-sm bg-blue-600 text-white'
         }`}
       >
         {message.type === 'image' && (

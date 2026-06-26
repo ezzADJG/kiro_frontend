@@ -6,8 +6,16 @@ import {
   subscribeBusinessPhones,
 } from '@/lib/db'
 import { useBusiness } from '@/context/BusinessContext'
+import { useAuth } from '@/context/AuthContext'
 import ConversationList from '@/components/conversations/ConversationList'
 import ChatPanel from '@/components/chat/ChatPanel'
+import DelegateModal from '@/components/chat/DelegateModal'
+import {
+  assignConversation,
+  reassignConversation,
+  releaseConversation,
+  sendAgentMessage,
+} from '@/services/chatApi'
 import {
   Select,
   SelectContent,
@@ -24,6 +32,7 @@ interface PhoneEntry {
 
 export default function Chats() {
   const { tieneNegocio, activeBusinessId } = useBusiness()
+  const { firebaseUser } = useAuth()
 
   const [conversations, setConversations] = useState<Record<
     string,
@@ -40,6 +49,16 @@ export default function Chats() {
 
   const [phones, setPhones] = useState<PhoneEntry[]>([])
   const [selectedPhoneId, setSelectedPhoneId] = useState<string>('all')
+
+  const [delegateOpen, setDelegateOpen] = useState(false)
+  const [error, setError] = useState('')
+
+  const activeConversation = activeConversationId && conversations
+    ? conversations[activeConversationId] || null
+    : null
+
+  const isAssignedToMe = activeConversation?.assignedTo === firebaseUser?.uid
+  const canSend = !!(activeConversation && isAssignedToMe && activeConversation.mode === 'agent')
 
   useEffect(() => {
     if (!tieneNegocio || !activeBusinessId) {
@@ -100,6 +119,55 @@ export default function Chats() {
     setActiveConversationId(id)
   }, [])
 
+  const handleAssign = async () => {
+    if (!activeBusinessId || !activeConversationId || !firebaseUser) return
+    try {
+      setError('')
+      await assignConversation(activeBusinessId, activeConversationId)
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleReassign = () => {
+    setDelegateOpen(true)
+  }
+
+  const handleDelegate = async (targetUid: string, targetName: string) => {
+    if (!activeBusinessId || !activeConversationId) return
+    try {
+      setError('')
+      await reassignConversation(activeBusinessId, activeConversationId, targetUid, targetName)
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleRelease = async () => {
+    if (!activeBusinessId || !activeConversationId) return
+    try {
+      setError('')
+      await releaseConversation(activeBusinessId, activeConversationId)
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleSendMessage = async (text: string) => {
+    if (!activeBusinessId || !activeConversationId || !firebaseUser) return
+
+    const customerId = activeConversation?.customerId || ''
+    const phoneNumberId = phones.length > 0 ? phones[0].phoneNumberId : ''
+
+    await sendAgentMessage(
+      activeBusinessId,
+      activeConversationId,
+      phoneNumberId,
+      customerId,
+      text
+    )
+  }
+
   if (!tieneNegocio) {
     return (
       <div className="flex flex-1 items-center justify-center text-center text-muted-foreground p-6">
@@ -140,13 +208,30 @@ export default function Chats() {
           />
         </div>
       </div>
-      <div className="flex-1">
+      <div className="flex flex-1 flex-col">
+        {error && (
+          <div className="bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+            {error}
+          </div>
+        )}
         <ChatPanel
           messages={messages}
           loading={messagesLoading}
           selectedConversationId={activeConversationId}
+          conversation={activeConversation}
+          currentUserId={firebaseUser?.uid || null}
+          onAssign={handleAssign}
+          onReassign={handleReassign}
+          onRelease={handleRelease}
+          onSendMessage={handleSendMessage}
+          canSend={canSend}
         />
       </div>
+      <DelegateModal
+        open={delegateOpen}
+        onClose={() => setDelegateOpen(false)}
+        onSelect={handleDelegate}
+      />
     </div>
   )
 }

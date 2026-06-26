@@ -64,6 +64,8 @@ export type CustomerSource = 'whatsapp' | 'web' | 'instagram' | 'manual'
 // ─── Conversation (en businessConversations) ───────────────────
 export interface BusinessConversation {
   assignedTo: string
+  assignedToName: string
+  assignedAt: number
   channel: ConversationChannel
   customerId: string
   customerName: string
@@ -80,6 +82,8 @@ export interface BusinessConversation {
 
 export interface Conversation {
   assignedTo: string
+  assignedToName: string
+  assignedAt: number
   businessId: string
   channel: ConversationChannel
   createdAt: number
@@ -95,7 +99,7 @@ export interface Conversation {
 }
 
 export type ConversationChannel = 'whatsapp'
-export type ConversationMode = 'bot' | 'human' | 'snoozed'
+export type ConversationMode = 'bot' | 'agent'
 export type ConversationPriority = 'normal' | 'high' | 'urgent'
 export type ConversationStatus = 'open' | 'closed' | 'pending'
 
@@ -107,13 +111,14 @@ export interface Message {
   metaMessageId: string
   senderId: string
   senderType: SenderType
+  senderName?: string
   status: MessageStatus
   content: string
   type: MessageType
 }
 
 export type MessageDirection = 'inbound' | 'outbound'
-export type SenderType = 'customer' | 'bot' | 'human'
+export type SenderType = 'customer' | 'bot' | 'agent'
 export type MessageStatus = 'sent' | 'received' | 'read' | 'failed'
 export type MessageType = 'text' | 'image' | 'audio' | 'document' | 'interactive'
 

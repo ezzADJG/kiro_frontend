@@ -1,11 +1,21 @@
+import { useRef, useEffect } from 'react'
 import { MessageSquare } from 'lucide-react'
-import type { Message } from '@/types'
+import type { Message, BusinessConversation } from '@/types'
 import MessageBubble from './MessageBubble'
+import ConversationHeader from './ConversationHeader'
+import ChatInput from './ChatInput'
 
 interface ChatPanelProps {
   messages: Record<string, Message> | null
   loading: boolean
   selectedConversationId: string | null
+  conversation: BusinessConversation | null
+  currentUserId: string | null
+  onAssign: () => void
+  onReassign: () => void
+  onRelease: () => void
+  onSendMessage: (text: string) => Promise<void>
+  canSend: boolean
 }
 
 function SkeletonBubble({ align }: { align: 'left' | 'right' }) {
@@ -51,7 +61,24 @@ export default function ChatPanel({
   messages,
   loading,
   selectedConversationId,
+  conversation,
+  currentUserId,
+  onAssign,
+  onReassign,
+  onRelease,
+  onSendMessage,
+  canSend,
 }: ChatPanelProps) {
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  const messageEntries = messages
+    ? Object.entries(messages).sort(([, a], [, b]) => a.createdAt - b.createdAt)
+    : []
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messageEntries.length])
+
   if (!selectedConversationId) {
     return (
       <div className="flex h-full flex-col bg-white dark:bg-neutral-950">
@@ -71,17 +98,16 @@ export default function ChatPanel({
     )
   }
 
-  const messageEntries = messages
-    ? Object.entries(messages).sort(([, a], [, b]) => a.createdAt - b.createdAt)
-    : []
-
   return (
     <div className="flex h-full flex-col bg-white dark:bg-neutral-950">
-      <div className="border-b border-neutral-200 p-4 dark:border-neutral-800">
-        <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
-          Conversación
-        </h3>
-      </div>
+      <ConversationHeader
+        conversation={conversation}
+        conversationId={selectedConversationId}
+        currentUserId={currentUserId}
+        onAssign={onAssign}
+        onReassign={onReassign}
+        onRelease={onRelease}
+      />
       <div className="flex-1 overflow-y-auto p-6">
         {messageEntries.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-neutral-400">
@@ -94,7 +120,9 @@ export default function ChatPanel({
             ))}
           </div>
         )}
+        <div ref={bottomRef} />
       </div>
+      <ChatInput onSend={onSendMessage} disabled={!canSend} />
     </div>
   )
 }

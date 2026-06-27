@@ -1,10 +1,30 @@
 steps:
   - name: gcr.io/cloud-builders/docker
+    entrypoint: docker
     args:
       - build
+      - '--platform=linux/amd64'
       - '--tag'
       - >-
         ${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${SHORT_SHA}
+      - '--build-arg'
+      - VITE_FIREBASE_API_KEY=${_VITE_FIREBASE_API_KEY}
+      - '--build-arg'
+      - VITE_FIREBASE_AUTH_DOMAIN=${_VITE_FIREBASE_AUTH_DOMAIN}
+      - '--build-arg'
+      - VITE_FIREBASE_DATABASE_URL=${_VITE_FIREBASE_DATABASE_URL}
+      - '--build-arg'
+      - VITE_FIREBASE_PROJECT_ID=${_VITE_FIREBASE_PROJECT_ID}
+      - '--build-arg'
+      - VITE_FIREBASE_STORAGE_BUCKET=${_VITE_FIREBASE_STORAGE_BUCKET}
+      - '--build-arg'
+      - VITE_FIREBASE_MESSAGING_SENDER_ID=${_VITE_FIREBASE_MESSAGING_SENDER_ID}
+      - '--build-arg'
+      - VITE_FIREBASE_APP_ID=${_VITE_FIREBASE_APP_ID}
+      - '--build-arg'
+      - VITE_BUSINESS_ID=${_VITE_BUSINESS_ID}
+      - '--build-arg'
+      - VITE_BACKEND_URL=${_VITE_BACKEND_URL}
       - '--file'
       - Dockerfile
       - .
@@ -29,7 +49,6 @@ steps:
       - '--min-instances=0'
       - '--max-instances=5'
       - '--concurrency=80'
-      - '--set-env-vars=VITE_FIREBASE_API_KEY=${_VITE_FIREBASE_API_KEY},VITE_FIREBASE_AUTH_DOMAIN=${_VITE_FIREBASE_AUTH_DOMAIN},VITE_FIREBASE_DATABASE_URL=${_VITE_FIREBASE_DATABASE_URL},VITE_FIREBASE_PROJECT_ID=${_VITE_FIREBASE_PROJECT_ID},VITE_FIREBASE_STORAGE_BUCKET=${_VITE_FIREBASE_STORAGE_BUCKET},VITE_FIREBASE_MESSAGING_SENDER_ID=${_VITE_FIREBASE_MESSAGING_SENDER_ID},VITE_FIREBASE_APP_ID=${_VITE_FIREBASE_APP_ID},VITE_BUSINESS_ID=${_VITE_BUSINESS_ID},VITE_BACKEND_URL=${_VITE_BACKEND_URL}'
 
 substitutions:
   _LOCATION: us-central1

@@ -29,11 +29,9 @@ export default function Canales() {
 
   const [form, setForm] = useState<FormState>(initialForm)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [pendingRecord, setPendingRecord] = useState<PhoneNoMetaId | null>(null)
+  const [pendingRecords, setPendingRecords] = useState<PhoneNoMetaId[]>([])
   const [connectedChannels, setConnectedChannels] = useState<PhoneChannel[]>([])
   const [error, setError] = useState('')
-
-  const hasPending = pendingRecord !== null
 
   useEffect(() => {
     if (!activeBusinessId) return
@@ -42,15 +40,15 @@ export default function Canales() {
     const onNoMetaUpdate = onValue(noMetaRef, (snapshot) => {
       const data = snapshot.val() as Record<string, PhoneNoMetaId> | null
       if (!data) {
-        setPendingRecord(null)
+        setPendingRecords([])
         return
       }
 
-      const pending = Object.values(data).find(
+      const pending = Object.values(data).filter(
         (item) =>
           item.business_id === activeBusinessId && item.estado === 'pendiente'
       )
-      setPendingRecord(pending ?? null)
+      setPendingRecords(pending)
     })
 
     const phones = phonesRef()
@@ -87,6 +85,14 @@ export default function Canales() {
     }
     if (!description.trim()) {
       setError('La descripción es requerida')
+      return
+    }
+
+    const isDuplicate = [...pendingRecords, ...connectedChannels].some(
+      (c) => c.phone_number === phoneNumber.trim()
+    )
+    if (isDuplicate) {
+      setError('Este número ya ha sido registrado')
       return
     }
 
@@ -142,74 +148,80 @@ export default function Canales() {
         </div>
       </div>
 
-      {hasPending ? (
-        <Card className="w-full max-w-md self-center text-center">
-          <CardHeader>
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-              <Loader2 className="h-6 w-6 animate-spin" />
+      <Card className="w-full max-w-md self-center">
+        <CardHeader>
+          <CardTitle>Nuevo canal</CardTitle>
+          <CardDescription>
+            Ingresa el n&uacute;mero de WhatsApp y una descripci&oacute;n
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">
+                N&uacute;mero de tel&eacute;fono
+              </Label>
+              <Input
+                id="phoneNumber"
+                required
+                value={form.phoneNumber}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    phoneNumber: e.target.value,
+                  }))
+                }
+                placeholder="+51999000000"
+              />
             </div>
-            <CardTitle>Esperando aprobaci&oacute;n</CardTitle>
-            <CardDescription>
-              Tu solicitud para el n&uacute;mero{' '}
-              <span className="font-medium text-foreground">
-                {pendingRecord.phone_number}
-              </span>{' '}
-              est&aacute; siendo revisada por un administrador. Te
-              notificaremos cuando est&eacute; conectada.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      ) : (
-        <Card className="w-full max-w-md self-center">
-          <CardHeader>
-            <CardTitle>Nuevo canal</CardTitle>
-            <CardDescription>
-              Ingresa el n&uacute;mero de WhatsApp y una descripci&oacute;n
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber">
-                  N&uacute;mero de tel&eacute;fono
-                </Label>
-                <Input
-                  id="phoneNumber"
-                  required
-                  value={form.phoneNumber}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      phoneNumber: e.target.value,
-                    }))
-                  }
-                  placeholder="+51999000000"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descripci&oacute;n</Label>
-                <Input
-                  id="description"
-                  required
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Ej: Sucursal Principal"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Descripci&oacute;n</Label>
+              <Input
+                id="description"
+                required
+                value={form.description}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                placeholder="Ej: Sucursal Principal"
+              />
+            </div>
 
-              {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Guardando...' : 'Guardar'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {pendingRecords.length > 0 && (
+        <div className="w-full">
+          <h2 className="mb-4 text-lg font-medium">Pendientes de aprobaci&oacute;n</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {pendingRecords.map((record, index) => (
+              <Card key={index} size="sm">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                    <div>
+                      <CardTitle>{record.phone_number}</CardTitle>
+                      <CardDescription>
+                        {record.description}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="w-full">

@@ -1,0 +1,109 @@
+{
+  "restaurant": {
+    "label": "Restaurante",
+    "stockSchema": {
+      "campos": [
+        { "key": "nombre", "tipo": "texto", "requerido": true },
+        { "key": "descripcion", "tipo": "texto", "requerido": false },
+        { "key": "precio", "tipo": "numero", "requerido": true },
+        { "key": "categoria", "tipo": "texto", "requerido": false },
+        { "key": "disponible", "tipo": "booleano", "requerido": false }
+      ]
+    }
+  },
+  "retail": {
+    "label": "Tienda Retail",
+    "stockSchema": {
+      "campos": [
+        { "key": "nombre", "tipo": "texto", "requerido": true },
+        { "key": "descripcion", "tipo": "texto", "requerido": false },
+        { "key": "precio", "tipo": "numero", "requerido": true },
+        { "key": "stock_actual", "tipo": "numero", "requerido": true },
+        { "key": "categoria", "tipo": "texto", "requerido": false },
+        { "key": "talla", "tipo": "texto", "requerido": false },
+        { "key": "color", "tipo": "texto", "requerido": false }
+      ]
+    }
+  },
+  "tienda_ropa": {
+    "label": "Tienda de Ropa",
+    "stockSchema": {
+      "campos": [
+        { "key": "nombre", "tipo": "texto", "requerido": true },
+        { "key": "descripcion", "tipo": "texto", "requerido": false },
+        { "key": "precio", "tipo": "numero", "requerido": true },
+        { "key": "stock_actual", "tipo": "numero", "requerido": true },
+        { "key": "categoria", "tipo": "texto", "requerido": false },
+        { "key": "talla", "tipo": "texto", "requerido": false },
+        { "key": "color", "tipo": "texto", "requerido": false }
+      ]
+    }
+  },
+  "barberia": {
+    "label": "Barbería",
+    "stockSchema": {
+      "campos": [
+        { "key": "nombre", "tipo": "texto", "requerido": true },
+        { "key": "descripcion", "tipo": "texto", "requerido": false },
+        { "key": "precio", "tipo": "numero", "requerido": true },
+        { "key": "stock_actual", "tipo": "numero", "requerido": true },
+        { "key": "categoria", "tipo": "texto", "requerido": false }
+      ]
+    }
+  },
+  "taller_mecanico": {
+    "label": "Taller Mecánico",
+    "stockSchema": {
+      "campos": [
+        { "key": "nombre", "tipo": "texto", "requerido": true },
+        { "key": "descripcion", "tipo": "texto", "requerido": false },
+        { "key": "precio_compra", "tipo": "numero", "requerido": true },
+        { "key": "precio_venta", "tipo": "numero", "requerido": true },
+        { "key": "stock_actual", "tipo": "numero", "requerido": true },
+        { "key": "proveedor", "tipo": "texto", "requerido": false },
+        { "key": "codigo_producto", "tipo": "texto", "requerido": false }
+      ]
+    }
+  },
+  "hotel": {
+    "label": "Hotel",
+    "stockSchema": {
+      "campos": [
+        { "key": "nombre", "tipo": "texto", "requerido": true },
+        { "key": "descripcion", "tipo": "texto", "requerido": false },
+        { "key": "precio", "tipo": "numero", "requerido": true },
+        { "key": "stock_actual", "tipo": "numero", "requerido": true },
+        { "key": "categoria", "tipo": "texto", "requerido": false }
+      ]
+    }
+  },
+  "clinica": {
+    "label": "Clínica",
+    "stockSchema": {
+      "campos": [
+        { "key": "nombre", "tipo": "texto", "requerido": true },
+        { "key": "descripcion", "tipo": "texto", "requerido": false },
+        { "key": "precio_compra", "tipo": "numero", "requerido": true },
+        { "key": "precio_venta", "tipo": "numero", "requerido": true },
+        { "key": "stock_actual", "tipo": "numero", "requerido": true },
+        { "key": "lote", "tipo": "texto", "requerido": false },
+        { "key": "fecha_vencimiento", "tipo": "texto", "requerido": false }
+      ]
+    }
+  },
+  "inmobiliaria": {
+    "label": "Inmobiliaria",
+    "stockSchema": {
+      "campos": [
+        { "key": "nombre", "tipo": "texto", "requerido": true },
+        { "key": "descripcion", "tipo": "texto", "requerido": false },
+        { "key": "precio", "tipo": "numero", "requerido": true },
+        { "key": "tipo_propiedad", "tipo": "texto", "requerido": true },
+        { "key": "area_m2", "tipo": "numero", "requerido": false },
+        { "key": "habitaciones", "tipo": "numero", "requerido": false },
+        { "key": "ubicacion", "tipo": "texto", "requerido": false },
+        { "key": "disponible", "tipo": "booleano", "requerido": false }
+      ]
+    }
+  }
+}

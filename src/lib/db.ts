@@ -5,6 +5,8 @@ import {
   equalTo,
   onValue,
   off,
+  push,
+  update,
   type Unsubscribe,
 } from 'firebase/database'
 import { db } from './firebase'
@@ -107,4 +109,64 @@ export async function fetchUserBusiness(uid: string) {
       { onlyOnce: true }
     )
   })
+}
+
+export function productsRef(businessId: string) {
+  return ref(db, `products/${businessId}`)
+}
+
+export function productRef(businessId: string, productId: string) {
+  return ref(db, `products/${businessId}/${productId}`)
+}
+
+export function servicesRef(businessId: string) {
+  return ref(db, `services/${businessId}`)
+}
+
+export function serviceRef(businessId: string, serviceId: string) {
+  return ref(db, `services/${businessId}/${serviceId}`)
+}
+
+export function subscribeProducts(
+  businessId: string,
+  callback: (data: Record<string, any> | null) => void
+): Unsubscribe {
+  const dbRef = productsRef(businessId)
+  const unsubscribe = onValue(dbRef, (snapshot) => {
+    callback(snapshot.val())
+  })
+  return () => {
+    off(dbRef)
+    unsubscribe()
+  }
+}
+
+export function subscribeBusinessType(
+  industry: string,
+  callback: (data: any | null) => void
+): Unsubscribe {
+  const dbRef = ref(db, `businessTypes/${industry}`)
+  const unsubscribe = onValue(dbRef, (snapshot) => {
+    callback(snapshot.val())
+  })
+  return () => {
+    off(dbRef)
+    unsubscribe()
+  }
+}
+
+export function createProduct(
+  businessId: string,
+  data: Record<string, any>
+) {
+  const ref = productsRef(businessId)
+  return push(ref, data)
+}
+
+export function updateProduct(
+  businessId: string,
+  productId: string,
+  data: Record<string, any>
+) {
+  return update(productRef(businessId, productId), data)
 }

@@ -133,3 +133,21 @@ export interface ProductItem {
   description?: string
   businessType: BusinessType
 }
+
+export interface BusinessProduct {
+  activo: boolean
+  createdAt: number
+  updatedAt: number
+  [key: string]: string | number | boolean
+}
+
+export interface BusinessService {
+  name: string
+  price: number
+  durationMinutes: number
+  active: boolean
+  description?: string
+  category?: string
+  createdAt: number
+  updatedAt: number
+}

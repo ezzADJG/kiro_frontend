@@ -12,7 +12,8 @@ import Chats from '@/pages/Chats'
 import Equipo from '@/pages/Equipo'
 import Canales from '@/pages/Canales'
 import AdminCanales from '@/pages/AdminCanales'
-import PaymentDev from '@/pages/PaymentDev'
+import PaymentVerification from '@/pages/PaymentVerification'
+import DeliveryDashboard from '@/pages/DeliveryDashboard'
 import AceptarInvitacion from '@/pages/AceptarInvitacion'
 import RutaProtegida from '@/components/RutaProtegida'
 import DashboardLayout from '@/components/DashboardLayout'
@@ -37,7 +38,8 @@ export default function App() {
                 <Route path="/dashboard/equipo" element={<Equipo />} />
                 <Route path="/dashboard/canales" element={<Canales />} />
                 <Route path="/dashboard/admin/canales" element={<AdminCanales />} />
-                <Route path="/dashboard/pagos" element={<PaymentDev />} />
+                <Route path="/dashboard/verificacion-pagos" element={<PaymentVerification />} />
+                <Route path="/dashboard/entregas" element={<DeliveryDashboard />} />
               </Route>
             </Route>
           </Routes>

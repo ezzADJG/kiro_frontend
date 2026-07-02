@@ -1,14 +1,3 @@
-export interface Order {
-  id: string
-  orderNumber: string
-  products: OrderProduct[]
-  totalAmount: number
-  currency: string
-  paymentMethod: PaymentMethod
-  createdAt: number
-  status: OrderStatus
-}
-
 export interface OrderProduct {
   name: string
   quantity: number
@@ -16,60 +5,59 @@ export interface OrderProduct {
   totalPrice: number
 }
 
-export type PaymentMethod =
-  | 'yape'
-  | 'plin'
-  | 'transferencia'
-  | 'efectivo'
-  | 'tarjeta'
+export type PaymentMethod = 'yape' | 'plin' | 'transferencia' | 'efectivo' | 'tarjeta'
 
-export type OrderStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'shipped'
-  | 'completed'
-  | 'cancelled'
+export type PaymentVerificationStatus = 'pending_verification' | 'approved' | 'rejected'
 
-export type CustomerTier = 'new' | 'returning' | 'vip'
-export type PaymentStatus = 'pending' | 'verified' | 'rejected' | 'disputed'
-export type FraudRisk = 'low' | 'medium' | 'high'
+export type DeliveryStatus = 'ready' | 'in_transit' | 'delivered'
 
-export interface PaymentVerification {
+export interface PaymentOrder {
   id: string
-  orderId: string
-  receiptUrl: string
-  amount: number
+  purchaseNumber: string
+  customerName: string
+  customerDNI: string
+  customerPhone: string
+  deliveryAddress: string
+  products: OrderProduct[]
+  totalAmount: number
   currency: string
-  referenceNumber: string
-  bank: string
-  status: PaymentStatus
-  verifiedAt?: number
-  verifiedBy?: string
+  paymentMethod: PaymentMethod
+  receiptUrl: string
+  paymentReference: string
+  paymentBank: string
+  createdAt: number
+  status: PaymentVerificationStatus
 }
 
-export interface CustomerInfo {
+export interface DeliveryOrder {
+  id: string
+  paymentOrderId: string
+  purchaseNumber: string
+  customerName: string
+  customerDNI: string
+  customerPhone: string
+  deliveryAddress: string
+  products: OrderProduct[]
+  totalAmount: number
+  currency: string
+  paymentMethod: PaymentMethod
+  deliveryStatus: DeliveryStatus
+  assignedDriver: string | null
+  approvedBy: string
+  approvedAt: number
+}
+
+export interface Driver {
   id: string
   name: string
   phone: string
-  previousOrders: number
-  tier: CustomerTier
-  firstSeenAt: number
-  lastSeenAt: number
+  vehicle: string
 }
 
-export interface AIAnalysis {
-  summary: string
-  confidenceScore: number
-  fraudRisk: FraudRisk
-  observations: string[]
-  recommendedAction: string
-}
-
-export interface ActivityLogEntry {
+export interface Employee {
   id: string
-  action: string
-  performedBy: string
-  performedAt: number
+  name: string
+  email: string
 }
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -77,24 +65,17 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   plin: 'Plin',
   transferencia: 'Transferencia bancaria',
   efectivo: 'Efectivo',
-  tarjeta: 'Tarjeta',
+  tarjeta: 'Tarjeta de crédito/débito',
 }
 
-export const CUSTOMER_TIER_LABELS: Record<CustomerTier, string> = {
-  new: 'Nuevo',
-  returning: 'Recurrente',
-  vip: 'VIP',
+export const PAYMENT_VERIFICATION_STATUS_LABELS: Record<PaymentVerificationStatus, string> = {
+  pending_verification: 'Pago Pendiente de Verificación',
+  approved: 'Pago Aprobado',
+  rejected: 'Pago Rechazado',
 }
 
-export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
-  pending: 'Pendiente',
-  verified: 'Verificado',
-  rejected: 'Rechazado',
-  disputed: 'En disputa',
-}
-
-export const FRAUD_RISK_LABELS: Record<FraudRisk, string> = {
-  low: 'Bajo',
-  medium: 'Medio',
-  high: 'Alto',
+export const DELIVERY_STATUS_LABELS: Record<DeliveryStatus, string> = {
+  ready: 'Listo para Entregar',
+  in_transit: 'En Camino',
+  delivered: 'Entregado',
 }

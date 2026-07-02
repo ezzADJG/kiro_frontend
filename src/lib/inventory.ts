@@ -1,10 +1,23 @@
 import type { BusinessProduct } from '@/types'
 import type { BusinessTypeField } from '@/types/business'
+import type { CatalogKind } from '@/types'
 
 export function formatFieldLabel(key: string) {
   return key
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+export const CATALOG_KIND_OPTIONS: { value: CatalogKind; label: string }[] = [
+  { value: 'product', label: 'Producto' },
+  { value: 'variant', label: 'Variante' },
+  { value: 'service', label: 'Servicio' },
+  { value: 'combo', label: 'Combo / Kit' },
+]
+
+export function getCatalogKindLabel(kind: CatalogKind) {
+  return CATALOG_KIND_OPTIONS.find((option) => option.value === kind)?.label ??
+    'Producto'
 }
 
 function normalize(value: string) {
@@ -106,7 +119,7 @@ export function parseDraftFromText(
     }
 
     const keyMatch = normalizedText.match(
-      new RegExp(`(?:${normalizedKey}|${label})\s*(?:es|:)?\s*([^,.;]+)`, 'i')
+      new RegExp(`(?:${normalizedKey}|${label})\\s*(?:es|:)?\\s*([^,.;]+)`, 'i')
     )
     if (keyMatch?.[1]) {
       draft[campo.key] = keyMatch[1].trim()

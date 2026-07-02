@@ -10,10 +10,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { Plus, Pencil, Package, Sparkles } from 'lucide-react'
 import type { Business, BusinessTypeField } from '@/types/business'
-import type { BusinessProduct } from '@/types'
+import type { BusinessProduct, CatalogKind } from '@/types'
 import ProductFormModal from '@/components/inventario/ProductFormModal'
 import InventoryAssistantModal from '@/components/inventario/InventoryAssistantModal'
-import { buildOptionsByField, formatFieldLabel } from '@/lib/inventory'
+import {
+  buildOptionsByField,
+  formatFieldLabel,
+  getCatalogKindLabel,
+} from '@/lib/inventory'
 
 export default function Stock() {
   const { tieneNegocio, activeBusinessId, loadingBusiness } = useBusiness()
@@ -27,6 +31,7 @@ export default function Stock() {
   const [loadingProducts, setLoadingProducts] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showAssistant, setShowAssistant] = useState(false)
+  const [kindFilter, setKindFilter] = useState<'all' | CatalogKind>('all')
   const [editingProduct, setEditingProduct] = useState<{
     id: string
     data: BusinessProduct
@@ -174,9 +179,19 @@ export default function Stock() {
   const productEntries = products
     ? Object.entries(products).filter(([_, p]) => p)
     : []
-  const activeProducts = productEntries.filter(([_, p]) => p.activo)
-  const inactiveProducts = productEntries.filter(([_, p]) => !p.activo)
-  const sortedProducts = [...activeProducts, ...inactiveProducts]
+  const catalogItems: Array<BusinessProduct & { id: string; kind: CatalogKind }> =
+    productEntries.map(([id, product]) => ({
+      id,
+      ...product,
+      kind: (product.kind as CatalogKind | undefined) ?? 'product',
+    }))
+  const filteredItems =
+    kindFilter === 'all'
+      ? catalogItems
+      : catalogItems.filter((item) => item.kind === kindFilter)
+  const activeItems = filteredItems.filter((item) => item.activo)
+  const inactiveItems = filteredItems.filter((item) => !item.activo)
+  const sortedProducts = [...activeItems, ...inactiveItems]
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
@@ -192,6 +207,24 @@ export default function Stock() {
             Nuevo producto
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {(['all', 'product', 'variant', 'service', 'combo'] as const).map(
+          (kind) => (
+            <button
+              key={kind}
+              onClick={() => setKindFilter(kind)}
+              className={`rounded-full px-3 py-1 text-xs transition-colors ${
+                kindFilter === kind
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
+              }`}
+            >
+              {kind === 'all' ? 'Todo' : getCatalogKindLabel(kind)}
+            </button>
+          )
+        )}
       </div>
 
       {productEntries.length === 0 ? (
@@ -213,6 +246,9 @@ export default function Stock() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
+                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
+                  Tipo
+                </th>
                 {campos.map((campo) => (
                   <th
                     key={campo.key}
@@ -230,13 +266,16 @@ export default function Stock() {
               </tr>
             </thead>
             <tbody>
-              {sortedProducts.map(([id, product]) => (
+              {sortedProducts.map((item) => (
                 <tr
-                  key={id}
+                  key={item.id}
                   className={`border-b border-neutral-100 transition-colors last:border-0 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900/50 ${
-                    !product.activo ? 'opacity-50' : ''
+                    !item.activo ? 'opacity-50' : ''
                   }`}
                 >
+                  <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+                    {getCatalogKindLabel(item.kind)}
+                  </td>
                   {campos.map((campo) => (
                     <td
                       key={campo.key}
@@ -244,27 +283,27 @@ export default function Stock() {
                     >
                       {campo.tipo === 'booleano' ? (
                         <span>
-                          {product[campo.key] ? 'Sí' : 'No'}
+                          {item[campo.key] ? 'Sí' : 'No'}
                         </span>
                       ) : (
                         <span>
-                          {String(product[campo.key] ?? '-')}
+                          {String(item[campo.key] ?? '-')}
                         </span>
                       )}
                     </td>
                   ))}
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => handleToggleActivo(id)}
+                      onClick={() => handleToggleActivo(item.id)}
                       className={`inline-flex h-6 w-10 items-center rounded-full transition-colors ${
-                        product.activo
+                        item.activo
                           ? 'bg-green-500'
                           : 'bg-neutral-300 dark:bg-neutral-600'
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          product.activo ? 'translate-x-5' : 'translate-x-1'
+                          item.activo ? 'translate-x-5' : 'translate-x-1'
                         }`}
                       />
                     </button>
@@ -272,7 +311,7 @@ export default function Stock() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-1">
                       <button
-                        onClick={() => handleEdit(id, product)}
+                        onClick={() => handleEdit(item.id, item)}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
                       >
                         <Pencil className="h-4 w-4" />

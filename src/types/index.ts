@@ -124,6 +124,18 @@ export type MessageType = 'text' | 'image' | 'audio' | 'document' | 'interactive
 
 export type BusinessType = 'restaurant' | 'retail' | 'services' | 'salon' | 'other'
 
+export type CatalogKind = 'product' | 'variant' | 'service' | 'combo'
+
+export interface CatalogComboComponent {
+  itemId: string
+  quantity: number
+  name?: string
+}
+
+export interface CatalogVariantValues {
+  [optionName: string]: string
+}
+
 export interface ProductItem {
   id: string
   name: string
@@ -135,10 +147,33 @@ export interface ProductItem {
 }
 
 export interface BusinessProduct {
+  kind?: CatalogKind
+  name?: string
+  description?: string
+  price?: number
+  sku?: string
+  category?: string
+  stock?: number
+  stockMin?: number
+  brand?: string
+  supplier?: string
+  unit?: string
+  activeVariant?: boolean
+  parentId?: string
+  variantValues?: CatalogVariantValues
+  components?: CatalogComboComponent[]
+  durationMinutes?: number
+  serviceMode?: 'onsite' | 'virtual'
   activo: boolean
   createdAt: number
   updatedAt: number
-  [key: string]: string | number | boolean
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | CatalogComboComponent[]
+    | CatalogVariantValues
+    | undefined
 }
 
 export interface BusinessService {

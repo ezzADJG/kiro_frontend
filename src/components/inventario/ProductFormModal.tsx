@@ -4,7 +4,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { X } from 'lucide-react'
 import type { BusinessTypeField } from '@/types/business'
-import { formatFieldLabel } from '@/lib/inventory'
+import type { CatalogKind } from '@/types'
+import {
+  CATALOG_KIND_OPTIONS,
+  formatFieldLabel,
+  getCatalogKindLabel,
+} from '@/lib/inventory'
 
 interface ProductFormModalProps {
   open: boolean
@@ -12,6 +17,7 @@ interface ProductFormModalProps {
   campos: BusinessTypeField[]
   product: Record<string, any> | null
   optionsByField: Record<string, string[]>
+  initialKind?: CatalogKind
   onSave: (values: Record<string, any>) => Promise<void>
 }
 
@@ -21,9 +27,11 @@ export default function ProductFormModal({
   campos,
   product,
   optionsByField,
+  initialKind = 'product',
   onSave,
 }: ProductFormModalProps) {
   const [values, setValues] = useState<Record<string, any>>({})
+  const [kind, setKind] = useState<CatalogKind>(initialKind)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,9 +44,11 @@ export default function ProductFormModal({
         initial[campo.key] = campo.tipo === 'booleano' ? false : ''
       }
     }
+    initial.kind = product?.kind ?? initialKind
     setValues(initial)
+    setKind((product?.kind as CatalogKind) ?? initialKind)
     setError(null)
-  }, [product, campos, open])
+  }, [product, campos, open, initialKind])
 
   const fieldErrors = useMemo(() => {
     const errors: string[] = []
@@ -80,7 +90,7 @@ export default function ProductFormModal({
 
     setSaving(true)
     try {
-      await onSave(values)
+      await onSave({ ...values, kind })
     } catch {
       setError('Error al guardar el producto')
     } finally {
@@ -95,7 +105,7 @@ export default function ProductFormModal({
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-lg dark:bg-neutral-900">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-medium">
-            {product ? 'Editar producto' : 'Nuevo producto'}
+            {product ? 'Editar ítem' : 'Nuevo ítem'}
           </h2>
           <button
             onClick={onClose}
@@ -106,6 +116,25 @@ export default function ProductFormModal({
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="kind">Tipo de ítem</Label>
+            <select
+              id="kind"
+              value={kind}
+              onChange={(e) => setKind(e.target.value as CatalogKind)}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            >
+              {CATALOG_KIND_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              {getCatalogKindLabel(kind)} se guardará con este tipo.
+            </p>
+          </div>
+
           {campos.map((campo) => {
             const currentValue = values[campo.key]
             const options = optionsByField[campo.key] ?? []

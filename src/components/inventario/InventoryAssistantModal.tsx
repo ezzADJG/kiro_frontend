@@ -4,9 +4,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { X, Sparkles } from 'lucide-react'
 import type { BusinessTypeField } from '@/types/business'
+import type { CatalogKind } from '@/types'
 import {
+  CATALOG_KIND_OPTIONS,
   buildOptionsByField,
   formatFieldLabel,
+  getCatalogKindLabel,
   isFieldComplete,
   parseDraftFromText,
 } from '@/lib/inventory'
@@ -88,6 +91,7 @@ export default function InventoryAssistantModal({
 }: InventoryAssistantModalProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState<Record<string, any>>({})
+  const [kind, setKind] = useState<CatalogKind>('product')
   const [input, setInput] = useState('')
   const [pendingField, setPendingField] = useState<BusinessTypeField | null>(null)
   const [stage, setStage] = useState<'collecting' | 'confirm'>('collecting')
@@ -104,10 +108,11 @@ export default function InventoryAssistantModal({
     setMessages([
       {
         role: 'assistant',
-        text: 'Describe el producto o servicio en una frase. Yo completaré lo posible y te pediré solo lo que falte.',
+        text: 'Primero elige el tipo de ítem y luego descríbelo en una frase. Yo completaré lo posible y te pediré solo lo que falte.',
       },
     ])
     setDraft({})
+    setKind('product')
     setInput('')
     setPendingField(null)
     setStage('collecting')
@@ -127,7 +132,7 @@ export default function InventoryAssistantModal({
       if (/\b(si|sí|confirmar|guardar|ok|dale)\b/i.test(text)) {
         setSaving(true)
         try {
-          await onConfirm(draft)
+          await onConfirm({ ...draft, kind })
           setMessages((prev) => [
             ...prev,
             {
@@ -182,13 +187,13 @@ export default function InventoryAssistantModal({
 
     setPendingField(null)
     setStage('confirm')
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: 'assistant',
-        text: `Resumen del producto:\n${summarizeDraft(campos, nextDraft)}\n\nResponde "confirmar" para guardar o escribe lo que quieras corregir.`,
-      },
-    ])
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: `Resumen del ítem (${getCatalogKindLabel(kind)}):\n${summarizeDraft(campos, nextDraft)}\n\nResponde "confirmar" para guardar o escribe lo que quieras corregir.`,
+        },
+      ])
   }
 
   const options = pendingField ? optionsByField[pendingField.key] ?? [] : []
@@ -210,6 +215,24 @@ export default function InventoryAssistantModal({
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto p-6">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {CATALOG_KIND_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setKind(option.value)}
+                className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${
+                  kind === option.value
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-800'
+                }`}
+              >
+                <div className="font-medium">{option.label}</div>
+                <div className="text-xs text-neutral-500">Crear como {option.label.toLowerCase()}</div>
+              </button>
+            ))}
+          </div>
+
           {messages.map((message, index) => (
             <div
               key={`${message.role}-${index}`}
@@ -230,6 +253,9 @@ export default function InventoryAssistantModal({
           {stage === 'confirm' && (
             <div className="rounded-xl border border-neutral-200 p-4 text-sm dark:border-neutral-800">
               <p className="mb-2 font-medium">Resumen listo para guardar</p>
+              <p className="mb-2 text-xs text-neutral-500">
+                Tipo: {getCatalogKindLabel(kind)}
+              </p>
               <pre className="whitespace-pre-wrap text-xs text-neutral-600 dark:text-neutral-400">
                 {summarizeDraft(campos, draft)}
               </pre>

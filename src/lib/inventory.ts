@@ -8,6 +8,15 @@ export function formatFieldLabel(key: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+export function slugifyHandle(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 export const CATALOG_KIND_OPTIONS: { value: CatalogKind; label: string }[] = [
   { value: 'product', label: 'Producto' },
   { value: 'variant', label: 'Variante' },

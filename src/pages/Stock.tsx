@@ -32,10 +32,9 @@ export default function Stock() {
   const [showModal, setShowModal] = useState(false)
   const [showAssistant, setShowAssistant] = useState(false)
   const [kindFilter, setKindFilter] = useState<'all' | CatalogKind>('all')
-  const [editingProduct, setEditingProduct] = useState<{
-    id: string
-    data: BusinessProduct
-  } | null>(null)
+  const [editingProduct, setEditingProduct] = useState<
+    (BusinessProduct & { id: string; kind: CatalogKind }) | null
+  >(null)
 
   const industry = business?.industry
 
@@ -80,8 +79,8 @@ export default function Stock() {
     setShowAssistant(true)
   }
 
-  const handleEdit = (id: string, data: BusinessProduct) => {
-    setEditingProduct({ id, data })
+  const handleEdit = (item: BusinessProduct & { id: string; kind: CatalogKind }) => {
+    setEditingProduct(item)
     setShowModal(true)
   }
 
@@ -192,6 +191,22 @@ export default function Stock() {
   const activeItems = filteredItems.filter((item) => item.activo)
   const inactiveItems = filteredItems.filter((item) => !item.activo)
   const sortedProducts = [...activeItems, ...inactiveItems]
+  const hasVisibleItems = sortedProducts.length > 0
+  const coreFieldKeys = new Set([
+    'handle',
+    'name',
+    'descriptionShort',
+    'price',
+    'category',
+    'stock',
+    'sku',
+  ])
+  const extraCampos = campos.filter((campo) => !coreFieldKeys.has(campo.key))
+  const currencyFormatter = new Intl.NumberFormat('es-PE', {
+    style: 'currency',
+    currency: business.currency || 'PEN',
+    maximumFractionDigits: 2,
+  })
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
@@ -227,12 +242,12 @@ export default function Stock() {
         )}
       </div>
 
-      {productEntries.length === 0 ? (
+      {!hasVisibleItems ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-neutral-400">
           <div className="rounded-full bg-neutral-100 p-4 dark:bg-neutral-800">
             <Package className="h-8 w-8" />
           </div>
-          <p className="text-sm">No hay productos</p>
+          <p className="text-sm">No hay ítems para este filtro</p>
           <p className="text-xs text-neutral-400">
             Agrega tu primer producto para empezar
           </p>
@@ -249,7 +264,25 @@ export default function Stock() {
                 <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
                   Tipo
                 </th>
-                {campos.map((campo) => (
+                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
+                  Handle
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
+                  Nombre
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
+                  Descripción
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
+                  Precio
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
+                  Categoría
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
+                  Stock
+                </th>
+                {extraCampos.map((campo) => (
                   <th
                     key={campo.key}
                     className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400"
@@ -276,19 +309,21 @@ export default function Stock() {
                   <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
                     {getCatalogKindLabel(item.kind)}
                   </td>
-                  {campos.map((campo) => (
+                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{String(item.handle ?? '-')}</td>
+                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{String(item.name ?? '-')}</td>
+                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{String(item.descriptionShort ?? item.description ?? '-')}</td>
+                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{typeof item.price === 'number' ? currencyFormatter.format(item.price) : '-'}</td>
+                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{String(item.category ?? '-')}</td>
+                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{item.stock ?? '-'}</td>
+                  {extraCampos.map((campo) => (
                     <td
                       key={campo.key}
                       className="px-4 py-3 text-neutral-900 dark:text-white"
                     >
                       {campo.tipo === 'booleano' ? (
-                        <span>
-                          {item[campo.key] ? 'Sí' : 'No'}
-                        </span>
+                        <span>{item[campo.key] ? 'Sí' : 'No'}</span>
                       ) : (
-                        <span>
-                          {String(item[campo.key] ?? '-')}
-                        </span>
+                        <span>{String(item[campo.key] ?? '-')}</span>
                       )}
                     </td>
                   ))}
@@ -311,7 +346,7 @@ export default function Stock() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-1">
                       <button
-                        onClick={() => handleEdit(item.id, item)}
+                        onClick={() => handleEdit(item)}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
                       >
                         <Pencil className="h-4 w-4" />
@@ -326,15 +361,16 @@ export default function Stock() {
       )}
 
       {showModal && businessType?.stockSchema && (
-        <ProductFormModal
+          <ProductFormModal
           open={showModal}
           onClose={() => {
             setShowModal(false)
             setEditingProduct(null)
           }}
           campos={businessType.stockSchema.campos}
-          product={editingProduct?.data ?? null}
+          product={editingProduct}
           optionsByField={optionsByField}
+          catalogItems={catalogItems}
           onSave={handleSave}
         />
       )}

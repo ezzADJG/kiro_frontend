@@ -148,7 +148,10 @@ export interface ProductItem {
 
 export interface BusinessProduct {
   kind?: CatalogKind
+  handle?: string
   name?: string
+  descriptionShort?: string
+  descriptionFull?: string
   description?: string
   price?: number
   sku?: string
@@ -164,6 +167,8 @@ export interface BusinessProduct {
   components?: CatalogComboComponent[]
   durationMinutes?: number
   serviceMode?: 'onsite' | 'virtual'
+  appointmentBufferMinutes?: number
+  bookingMode?: 'manual' | 'automatic'
   activo: boolean
   createdAt: number
   updatedAt: number

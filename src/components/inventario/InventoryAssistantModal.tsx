@@ -4,15 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { X, Sparkles } from 'lucide-react'
 import type { BusinessTypeField } from '@/types/business'
-import type { CatalogKind } from '@/types'
-import {
-  CATALOG_KIND_OPTIONS,
-  buildOptionsByField,
-  formatFieldLabel,
-  getCatalogKindLabel,
-  isFieldComplete,
-  parseDraftFromText,
-} from '@/lib/inventory'
+import { buildOptionsByField, formatFieldLabel, isFieldComplete, parseDraftFromText } from '@/lib/inventory'
 import type { BusinessProduct } from '@/types'
 
 type ChatRole = 'assistant' | 'user'
@@ -30,14 +22,6 @@ interface InventoryAssistantModalProps {
   onConfirm: (values: Record<string, any>) => Promise<void>
 }
 
-function normalize(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-}
-
 function getNextRequiredField(
   campos: BusinessTypeField[],
   draft: Record<string, any>
@@ -47,10 +31,7 @@ function getNextRequiredField(
   )
 }
 
-function summarizeDraft(
-  campos: BusinessTypeField[],
-  draft: Record<string, any>
-) {
+function summarizeDraft(campos: BusinessTypeField[], draft: Record<string, any>) {
   return campos
     .map((campo) => {
       const value = draft[campo.key]
@@ -59,27 +40,6 @@ function summarizeDraft(
       }`
     })
     .join('\n')
-}
-
-function coerceValue(field: BusinessTypeField, raw: string, options: string[]) {
-  if (field.tipo === 'numero') {
-    const match = raw.match(/-?\d+(?:[.,]\d+)?/)
-    return match ? Number(match[0].replace(',', '.')) : raw
-  }
-
-  if (field.tipo === 'booleano') {
-    if (/\b(si|sí|true|activo|disponible|1)\b/i.test(raw)) return true
-    if (/\b(no|false|inactivo|0)\b/i.test(raw)) return false
-    return raw
-  }
-
-  if (field.tipo === 'select') {
-    const normalized = normalize(raw)
-    const match = options.find((option) => normalize(option) === normalized)
-    return match || raw.trim()
-  }
-
-  return raw.trim()
 }
 
 export default function InventoryAssistantModal({
@@ -91,7 +51,6 @@ export default function InventoryAssistantModal({
 }: InventoryAssistantModalProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState<Record<string, any>>({})
-  const [kind, setKind] = useState<CatalogKind>('product')
   const [input, setInput] = useState('')
   const [pendingField, setPendingField] = useState<BusinessTypeField | null>(null)
   const [stage, setStage] = useState<'collecting' | 'confirm'>('collecting')
@@ -108,11 +67,10 @@ export default function InventoryAssistantModal({
     setMessages([
       {
         role: 'assistant',
-        text: 'Primero elige el tipo de ítem y luego descríbelo en una frase. Yo completaré lo posible y te pediré solo lo que falte.',
+        text: 'Describe lo que quieres agregar. Te iré pidiendo solo lo que falte según el esquema de este negocio.',
       },
     ])
     setDraft({})
-    setKind('product')
     setInput('')
     setPendingField(null)
     setStage('collecting')
@@ -132,13 +90,10 @@ export default function InventoryAssistantModal({
       if (/\b(si|sí|confirmar|guardar|ok|dale)\b/i.test(text)) {
         setSaving(true)
         try {
-          await onConfirm({ ...draft, kind })
+          await onConfirm(draft)
           setMessages((prev) => [
             ...prev,
-            {
-              role: 'assistant',
-              text: 'Listo, el producto quedó guardado en el catálogo.',
-            },
+            { role: 'assistant', text: 'Listo, quedó guardado.' },
           ])
           setTimeout(onClose, 350)
         } finally {
@@ -150,10 +105,7 @@ export default function InventoryAssistantModal({
       setStage('collecting')
       setMessages((prev) => [
         ...prev,
-        {
-          role: 'assistant',
-          text: 'Entendido. Continuemos con la información faltante.',
-        },
+        { role: 'assistant', text: 'Entendido. Sigamos completando los datos.' },
       ])
       return
     }
@@ -161,8 +113,7 @@ export default function InventoryAssistantModal({
     const nextDraft = { ...draft }
 
     if (pendingField) {
-      const options = optionsByField[pendingField.key] ?? []
-      nextDraft[pendingField.key] = coerceValue(pendingField, text, options)
+      nextDraft[pendingField.key] = text
     } else {
       Object.assign(nextDraft, parseDraftFromText(text, campos, optionsByField))
     }
@@ -173,13 +124,14 @@ export default function InventoryAssistantModal({
     if (nextMissing) {
       setPendingField(nextMissing)
       const options = optionsByField[nextMissing.key] ?? []
-      const helper = options.length > 0 ? ` Opciones: ${options.join(', ')}.` : ''
-      const question = nextMissing.label || formatFieldLabel(nextMissing.key)
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          text: `Necesito ${question}.${helper} Puedes escribir uno nuevo si hace falta.`,
+          text:
+            `Necesito ${nextMissing.label || formatFieldLabel(nextMissing.key)}.` +
+            (options.length > 0 ? ` Opciones: ${options.join(', ')}.` : '') +
+            ' Puedes escribir uno nuevo si hace falta.',
         },
       ])
       return
@@ -187,13 +139,13 @@ export default function InventoryAssistantModal({
 
     setPendingField(null)
     setStage('confirm')
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          text: `Resumen del ítem (${getCatalogKindLabel(kind)}):\n${summarizeDraft(campos, nextDraft)}\n\nResponde "confirmar" para guardar o escribe lo que quieras corregir.`,
-        },
-      ])
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        text: `Resumen:\n${summarizeDraft(campos, nextDraft)}\n\nResponde "confirmar" para guardar o corrige lo que necesites.`,
+      },
+    ])
   }
 
   const options = pendingField ? optionsByField[pendingField.key] ?? [] : []
@@ -215,24 +167,6 @@ export default function InventoryAssistantModal({
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto p-6">
-          <div className="grid gap-2 sm:grid-cols-2">
-            {CATALOG_KIND_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setKind(option.value)}
-                className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${
-                  kind === option.value
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-800'
-                }`}
-              >
-                <div className="font-medium">{option.label}</div>
-                <div className="text-xs text-neutral-500">Crear como {option.label.toLowerCase()}</div>
-              </button>
-            ))}
-          </div>
-
           {messages.map((message, index) => (
             <div
               key={`${message.role}-${index}`}
@@ -250,18 +184,6 @@ export default function InventoryAssistantModal({
             </div>
           ))}
 
-          {stage === 'confirm' && (
-            <div className="rounded-xl border border-neutral-200 p-4 text-sm dark:border-neutral-800">
-              <p className="mb-2 font-medium">Resumen listo para guardar</p>
-              <p className="mb-2 text-xs text-neutral-500">
-                Tipo: {getCatalogKindLabel(kind)}
-              </p>
-              <pre className="whitespace-pre-wrap text-xs text-neutral-600 dark:text-neutral-400">
-                {summarizeDraft(campos, draft)}
-              </pre>
-            </div>
-          )}
-
           {pendingField && options.length > 0 && stage !== 'confirm' && (
             <div className="flex flex-wrap gap-2">
               {options.map((option) => (
@@ -274,6 +196,15 @@ export default function InventoryAssistantModal({
                   {option}
                 </button>
               ))}
+            </div>
+          )}
+
+          {stage === 'confirm' && (
+            <div className="rounded-xl border border-neutral-200 p-4 text-sm dark:border-neutral-800">
+              <p className="mb-2 font-medium">Resumen listo para guardar</p>
+              <pre className="whitespace-pre-wrap text-xs text-neutral-600 dark:text-neutral-400">
+                {summarizeDraft(campos, draft)}
+              </pre>
             </div>
           )}
         </div>
@@ -304,7 +235,7 @@ export default function InventoryAssistantModal({
                   ? 'Escribe confirmar para guardar'
                   : pendingField
                     ? `Responde: ${pendingField.label || formatFieldLabel(pendingField.key)}`
-                    : 'Describe el producto'
+                    : 'Describe el producto o servicio'
               }
               disabled={saving}
             />

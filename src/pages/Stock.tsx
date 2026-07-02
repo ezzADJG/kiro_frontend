@@ -10,31 +10,23 @@ import {
 import { Button } from '@/components/ui/button'
 import { Plus, Pencil, Package, Sparkles } from 'lucide-react'
 import type { Business, BusinessTypeField } from '@/types/business'
-import type { BusinessProduct, CatalogKind } from '@/types'
+import type { BusinessProduct } from '@/types'
 import ProductFormModal from '@/components/inventario/ProductFormModal'
 import InventoryAssistantModal from '@/components/inventario/InventoryAssistantModal'
-import {
-  buildOptionsByField,
-  formatFieldLabel,
-  getCatalogKindLabel,
-} from '@/lib/inventory'
+import { buildOptionsByField, formatFieldLabel } from '@/lib/inventory'
+
+type EditableItem = BusinessProduct & { id: string }
 
 export default function Stock() {
   const { tieneNegocio, activeBusinessId, loadingBusiness } = useBusiness()
   const [business, setBusiness] = useState<Business | null>(null)
   const [loadingName, setLoadingName] = useState(false)
   const [businessType, setBusinessType] = useState<any>(null)
-  const [products, setProducts] = useState<Record<
-    string,
-    BusinessProduct
-  > | null>(null)
+  const [products, setProducts] = useState<Record<string, BusinessProduct> | null>(null)
   const [loadingProducts, setLoadingProducts] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showAssistant, setShowAssistant] = useState(false)
-  const [kindFilter, setKindFilter] = useState<'all' | CatalogKind>('all')
-  const [editingProduct, setEditingProduct] = useState<
-    (BusinessProduct & { id: string; kind: CatalogKind }) | null
-  >(null)
+  const [editingProduct, setEditingProduct] = useState<EditableItem | null>(null)
 
   const industry = business?.industry
 
@@ -57,9 +49,7 @@ export default function Stock() {
       setProducts(data as Record<string, BusinessProduct> | null)
       setLoadingProducts(false)
     })
-    return () => {
-      unsub()
-    }
+    return () => unsub()
   }, [activeBusinessId])
 
   useEffect(() => {
@@ -70,6 +60,9 @@ export default function Stock() {
     return () => unsub()
   }, [industry])
 
+  const campos: BusinessTypeField[] = businessType?.stockSchema?.campos || []
+  const optionsByField = buildOptionsByField(campos, products)
+
   const handleCreate = () => {
     setEditingProduct(null)
     setShowModal(true)
@@ -79,7 +72,7 @@ export default function Stock() {
     setShowAssistant(true)
   }
 
-  const handleEdit = (item: BusinessProduct & { id: string; kind: CatalogKind }) => {
+  const handleEdit = (item: EditableItem) => {
     setEditingProduct(item)
     setShowModal(true)
   }
@@ -157,15 +150,10 @@ export default function Stock() {
   if (!industry || !businessType?.stockSchema) {
     return (
       <div className="flex flex-1 items-center justify-center text-center text-muted-foreground p-6">
-        <p>
-          El esquema de stock no está configurado para este tipo de negocio.
-        </p>
+        <p>El esquema de stock no está configurado para este tipo de negocio.</p>
       </div>
     )
   }
-
-  const campos: BusinessTypeField[] = businessType.stockSchema.campos || []
-  const optionsByField = buildOptionsByField(campos, products)
 
   if (loadingProducts) {
     return (
@@ -175,36 +163,14 @@ export default function Stock() {
     )
   }
 
-  const productEntries = products
-    ? Object.entries(products).filter(([_, p]) => p)
-    : []
-  const catalogItems: Array<BusinessProduct & { id: string; kind: CatalogKind }> =
-    productEntries.map(([id, product]) => ({
-      id,
-      ...product,
-      kind: (product.kind as CatalogKind | undefined) ?? 'product',
-    }))
-  const filteredItems =
-    kindFilter === 'all'
-      ? catalogItems
-      : catalogItems.filter((item) => item.kind === kindFilter)
-  const activeItems = filteredItems.filter((item) => item.activo)
-  const inactiveItems = filteredItems.filter((item) => !item.activo)
-  const sortedProducts = [...activeItems, ...inactiveItems]
-  const hasVisibleItems = sortedProducts.length > 0
-  const coreFieldKeys = new Set([
-    'handle',
-    'name',
-    'descriptionShort',
-    'price',
-    'category',
-    'stock',
-    'sku',
-  ])
-  const extraCampos = campos.filter((campo) => !coreFieldKeys.has(campo.key))
-  const currencyFormatter = new Intl.NumberFormat('es-PE', {
-    style: 'currency',
-    currency: business.currency || 'PEN',
+  const productEntries = products ? Object.entries(products) : []
+  const items: EditableItem[] = productEntries.map(([id, product]) => ({
+    id,
+    ...product,
+  }))
+
+  const hasItems = items.length > 0
+  const numberFormatter = new Intl.NumberFormat('es-PE', {
     maximumFractionDigits: 2,
   })
 
@@ -224,65 +190,22 @@ export default function Stock() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {(['all', 'product', 'variant', 'service', 'combo'] as const).map(
-          (kind) => (
-            <button
-              key={kind}
-              onClick={() => setKindFilter(kind)}
-              className={`rounded-full px-3 py-1 text-xs transition-colors ${
-                kindFilter === kind
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
-              }`}
-            >
-              {kind === 'all' ? 'Todo' : getCatalogKindLabel(kind)}
-            </button>
-          )
-        )}
-      </div>
-
-      {!hasVisibleItems ? (
+      {!hasItems ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-neutral-400">
           <div className="rounded-full bg-neutral-100 p-4 dark:bg-neutral-800">
             <Package className="h-8 w-8" />
           </div>
-          <p className="text-sm">No hay ítems para este filtro</p>
+          <p className="text-sm">No hay ítems registrados</p>
           <p className="text-xs text-neutral-400">
-            Agrega tu primer producto para empezar
+            Agrega el primero usando el formulario o el asistente.
           </p>
-        </div>
-      ) : campos.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center text-center text-muted-foreground p-6">
-          <p>El esquema de stock no tiene campos configurados.</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
-                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
-                  Tipo
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
-                  Handle
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
-                  Nombre
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
-                  Descripción
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
-                  Precio
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
-                  Categoría
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
-                  Stock
-                </th>
-                {extraCampos.map((campo) => (
+                {campos.map((campo) => (
                   <th
                     key={campo.key}
                     className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400"
@@ -299,29 +222,26 @@ export default function Stock() {
               </tr>
             </thead>
             <tbody>
-              {sortedProducts.map((item) => (
+              {items.map((item) => (
                 <tr
                   key={item.id}
                   className={`border-b border-neutral-100 transition-colors last:border-0 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900/50 ${
                     !item.activo ? 'opacity-50' : ''
                   }`}
                 >
-                  <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
-                    {getCatalogKindLabel(item.kind)}
-                  </td>
-                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{String(item.handle ?? '-')}</td>
-                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{String(item.name ?? '-')}</td>
-                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{String(item.descriptionShort ?? item.description ?? '-')}</td>
-                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{typeof item.price === 'number' ? currencyFormatter.format(item.price) : '-'}</td>
-                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{String(item.category ?? '-')}</td>
-                  <td className="px-4 py-3 text-neutral-900 dark:text-white">{item.stock ?? '-'}</td>
-                  {extraCampos.map((campo) => (
+                  {campos.map((campo) => (
                     <td
                       key={campo.key}
                       className="px-4 py-3 text-neutral-900 dark:text-white"
                     >
                       {campo.tipo === 'booleano' ? (
                         <span>{item[campo.key] ? 'Sí' : 'No'}</span>
+                      ) : campo.tipo === 'numero' ? (
+                        <span>
+                          {typeof item[campo.key] === 'number'
+                            ? numberFormatter.format(Number(item[campo.key]))
+                            : String(item[campo.key] ?? '-')}
+                        </span>
                       ) : (
                         <span>{String(item[campo.key] ?? '-')}</span>
                       )}
@@ -331,9 +251,7 @@ export default function Stock() {
                     <button
                       onClick={() => handleToggleActivo(item.id)}
                       className={`inline-flex h-6 w-10 items-center rounded-full transition-colors ${
-                        item.activo
-                          ? 'bg-green-500'
-                          : 'bg-neutral-300 dark:bg-neutral-600'
+                        item.activo ? 'bg-green-500' : 'bg-neutral-300 dark:bg-neutral-600'
                       }`}
                     >
                       <span
@@ -361,7 +279,7 @@ export default function Stock() {
       )}
 
       {showModal && businessType?.stockSchema && (
-          <ProductFormModal
+        <ProductFormModal
           open={showModal}
           onClose={() => {
             setShowModal(false)
@@ -370,7 +288,6 @@ export default function Stock() {
           campos={businessType.stockSchema.campos}
           product={editingProduct}
           optionsByField={optionsByField}
-          catalogItems={catalogItems}
           onSave={handleSave}
         />
       )}

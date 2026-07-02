@@ -1,32 +1,10 @@
 import type { BusinessProduct } from '@/types'
 import type { BusinessTypeField } from '@/types/business'
-import type { CatalogKind } from '@/types'
 
 export function formatFieldLabel(key: string) {
   return key
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-export function slugifyHandle(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
-export const CATALOG_KIND_OPTIONS: { value: CatalogKind; label: string }[] = [
-  { value: 'product', label: 'Producto' },
-  { value: 'variant', label: 'Variante' },
-  { value: 'service', label: 'Servicio' },
-  { value: 'combo', label: 'Combo / Kit' },
-]
-
-export function getCatalogKindLabel(kind: CatalogKind) {
-  return CATALOG_KIND_OPTIONS.find((option) => option.value === kind)?.label ??
-    'Producto'
 }
 
 function normalize(value: string) {
@@ -84,6 +62,14 @@ function extractIntegerValue(text: string) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+export function extractSelectFieldValue(
+  text: string,
+  options: string[]
+) {
+  const normalizedText = normalize(text)
+  return options.find((option) => normalizedText.includes(normalize(option)))
+}
+
 export function parseDraftFromText(
   text: string,
   campos: BusinessTypeField[],
@@ -117,10 +103,7 @@ export function parseDraftFromText(
 
     if (campo.tipo === 'select') {
       const options = optionsByField[campo.key] ?? []
-      const matched = options.find((option) => {
-        const normalizedOption = normalize(option)
-        return normalizedText.includes(normalizedOption)
-      })
+      const matched = extractSelectFieldValue(text, options)
       if (matched) {
         draft[campo.key] = matched
         continue

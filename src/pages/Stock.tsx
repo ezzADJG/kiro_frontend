@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useBusiness } from '@/context/BusinessContext'
 import { obtenerNegocio } from '@/services/businessService'
 import {
@@ -161,10 +161,7 @@ export default function Stock() {
   }
 
   const campos: BusinessTypeField[] = businessType.stockSchema.campos || []
-  const optionsByField = useMemo(
-    () => buildOptionsByField(campos, products),
-    [campos, products]
-  )
+  const optionsByField = buildOptionsByField(campos, products)
 
   if (loadingProducts) {
     return (

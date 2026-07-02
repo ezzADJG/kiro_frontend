@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useBusiness } from '@/context/BusinessContext'
 import { obtenerNegocio } from '@/services/businessService'
 import {
@@ -8,16 +8,12 @@ import {
   updateProduct,
 } from '@/lib/db'
 import { Button } from '@/components/ui/button'
-import { Plus, Pencil, Package } from 'lucide-react'
+import { Plus, Pencil, Package, Sparkles } from 'lucide-react'
 import type { Business, BusinessTypeField } from '@/types/business'
 import type { BusinessProduct } from '@/types'
 import ProductFormModal from '@/components/inventario/ProductFormModal'
-
-function formatLabel(key: string): string {
-  return key
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-}
+import InventoryAssistantModal from '@/components/inventario/InventoryAssistantModal'
+import { buildOptionsByField, formatFieldLabel } from '@/lib/inventory'
 
 export default function Stock() {
   const { tieneNegocio, activeBusinessId, loadingBusiness } = useBusiness()
@@ -30,6 +26,7 @@ export default function Stock() {
   > | null>(null)
   const [loadingProducts, setLoadingProducts] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showAssistant, setShowAssistant] = useState(false)
   const [editingProduct, setEditingProduct] = useState<{
     id: string
     data: BusinessProduct
@@ -74,6 +71,10 @@ export default function Stock() {
     setShowModal(true)
   }
 
+  const handleOpenAssistant = () => {
+    setShowAssistant(true)
+  }
+
   const handleEdit = (id: string, data: BusinessProduct) => {
     setEditingProduct({ id, data })
     setShowModal(true)
@@ -111,6 +112,20 @@ export default function Stock() {
     [activeBusinessId, editingProduct]
   )
 
+  const handleAssistantSave = useCallback(
+    async (values: Record<string, any>) => {
+      if (!activeBusinessId) return
+      await createProduct(activeBusinessId, {
+        ...values,
+        activo: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      })
+      setShowAssistant(false)
+    },
+    [activeBusinessId]
+  )
+
   if (loadingBusiness || loadingName) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
@@ -146,6 +161,10 @@ export default function Stock() {
   }
 
   const campos: BusinessTypeField[] = businessType.stockSchema.campos || []
+  const optionsByField = useMemo(
+    () => buildOptionsByField(campos, products),
+    [campos, products]
+  )
 
   if (loadingProducts) {
     return (
@@ -166,10 +185,16 @@ export default function Stock() {
     <div className="flex flex-1 flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-medium">Stock</h1>
-        <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4" />
-          Nuevo producto
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleOpenAssistant}>
+            <Sparkles className="h-4 w-4" />
+            Asistente
+          </Button>
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4" />
+            Nuevo producto
+          </Button>
+        </div>
       </div>
 
       {productEntries.length === 0 ? (
@@ -196,7 +221,7 @@ export default function Stock() {
                     key={campo.key}
                     className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400"
                   >
-                    {formatLabel(campo.key)}
+                    {campo.label || formatFieldLabel(campo.key)}
                   </th>
                 ))}
                 <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">
@@ -273,7 +298,18 @@ export default function Stock() {
           }}
           campos={businessType.stockSchema.campos}
           product={editingProduct?.data ?? null}
+          optionsByField={optionsByField}
           onSave={handleSave}
+        />
+      )}
+
+      {showAssistant && businessType?.stockSchema && (
+        <InventoryAssistantModal
+          open={showAssistant}
+          onClose={() => setShowAssistant(false)}
+          campos={businessType.stockSchema.campos}
+          products={products}
+          onConfirm={handleAssistantSave}
         />
       )}
     </div>

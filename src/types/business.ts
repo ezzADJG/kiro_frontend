@@ -39,8 +39,11 @@ export interface UserBusinessMembership {
 
 export interface BusinessTypeField {
   key: string
-  tipo: 'texto' | 'numero' | 'booleano'
+  label?: string
+  tipo: 'texto' | 'numero' | 'booleano' | 'select'
   requerido: boolean
+  ayuda?: string
+  placeholder?: string
 }
 
 export interface BusinessType {

@@ -6,7 +6,7 @@
         { "key": "nombre", "tipo": "texto", "requerido": true },
         { "key": "descripcion", "tipo": "texto", "requerido": false },
         { "key": "precio", "tipo": "numero", "requerido": true },
-        { "key": "categoria", "tipo": "texto", "requerido": false },
+        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false },
         { "key": "disponible", "tipo": "booleano", "requerido": false }
       ]
     }
@@ -19,9 +19,9 @@
         { "key": "descripcion", "tipo": "texto", "requerido": false },
         { "key": "precio", "tipo": "numero", "requerido": true },
         { "key": "stock_actual", "tipo": "numero", "requerido": true },
-        { "key": "categoria", "tipo": "texto", "requerido": false },
-        { "key": "talla", "tipo": "texto", "requerido": false },
-        { "key": "color", "tipo": "texto", "requerido": false }
+        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false },
+        { "key": "talla", "label": "Talla", "tipo": "select", "requerido": false },
+        { "key": "color", "label": "Color", "tipo": "select", "requerido": false }
       ]
     }
   },
@@ -33,9 +33,9 @@
         { "key": "descripcion", "tipo": "texto", "requerido": false },
         { "key": "precio", "tipo": "numero", "requerido": true },
         { "key": "stock_actual", "tipo": "numero", "requerido": true },
-        { "key": "categoria", "tipo": "texto", "requerido": false },
-        { "key": "talla", "tipo": "texto", "requerido": false },
-        { "key": "color", "tipo": "texto", "requerido": false }
+        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false },
+        { "key": "talla", "label": "Talla", "tipo": "select", "requerido": false },
+        { "key": "color", "label": "Color", "tipo": "select", "requerido": false }
       ]
     }
   },
@@ -47,7 +47,7 @@
         { "key": "descripcion", "tipo": "texto", "requerido": false },
         { "key": "precio", "tipo": "numero", "requerido": true },
         { "key": "stock_actual", "tipo": "numero", "requerido": true },
-        { "key": "categoria", "tipo": "texto", "requerido": false }
+        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false }
       ]
     }
   },
@@ -60,7 +60,7 @@
         { "key": "precio_compra", "tipo": "numero", "requerido": true },
         { "key": "precio_venta", "tipo": "numero", "requerido": true },
         { "key": "stock_actual", "tipo": "numero", "requerido": true },
-        { "key": "proveedor", "tipo": "texto", "requerido": false },
+        { "key": "proveedor", "label": "Proveedor", "tipo": "select", "requerido": false },
         { "key": "codigo_producto", "tipo": "texto", "requerido": false }
       ]
     }
@@ -73,7 +73,7 @@
         { "key": "descripcion", "tipo": "texto", "requerido": false },
         { "key": "precio", "tipo": "numero", "requerido": true },
         { "key": "stock_actual", "tipo": "numero", "requerido": true },
-        { "key": "categoria", "tipo": "texto", "requerido": false }
+        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false }
       ]
     }
   },
@@ -98,7 +98,7 @@
         { "key": "nombre", "tipo": "texto", "requerido": true },
         { "key": "descripcion", "tipo": "texto", "requerido": false },
         { "key": "precio", "tipo": "numero", "requerido": true },
-        { "key": "tipo_propiedad", "tipo": "texto", "requerido": true },
+        { "key": "tipo_propiedad", "label": "Tipo de propiedad", "tipo": "select", "requerido": true },
         { "key": "area_m2", "tipo": "numero", "requerido": false },
         { "key": "habitaciones", "tipo": "numero", "requerido": false },
         { "key": "ubicacion", "tipo": "texto", "requerido": false },

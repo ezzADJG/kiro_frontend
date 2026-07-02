@@ -1,20 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { X } from 'lucide-react'
 import type { BusinessTypeField } from '@/types/business'
-
-function formatLabel(key: string): string {
-  return key
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-}
+import { formatFieldLabel } from '@/lib/inventory'
 
 interface ProductFormModalProps {
   open: boolean
   onClose: () => void
   campos: BusinessTypeField[]
   product: Record<string, any> | null
+  optionsByField: Record<string, string[]>
   onSave: (values: Record<string, any>) => Promise<void>
 }
 
@@ -23,6 +20,7 @@ export default function ProductFormModal({
   onClose,
   campos,
   product,
+  optionsByField,
   onSave,
 }: ProductFormModalProps) {
   const [values, setValues] = useState<Record<string, any>>({})
@@ -42,10 +40,32 @@ export default function ProductFormModal({
     setError(null)
   }, [product, campos, open])
 
-  const handleChange = (key: string, tipo: string, value: any) => {
+  const fieldErrors = useMemo(() => {
+    const errors: string[] = []
+    for (const campo of campos) {
+      if (!campo.requerido) continue
+      const val = values[campo.key]
+      const missing =
+        val === '' ||
+        val === undefined ||
+        val === null ||
+        (campo.tipo === 'numero' && typeof val !== 'number')
+      if (missing) {
+        errors.push(`El campo "${formatFieldLabel(campo.key)}" es obligatorio`)
+      }
+    }
+    return errors
+  }, [campos, values])
+
+  const handleChange = (key: string, tipo: string, value: string | boolean) => {
     setValues((prev) => ({
       ...prev,
-      [key]: tipo === 'numero' ? Number(value) : value,
+      [key]:
+        tipo === 'numero'
+          ? value === ''
+            ? ''
+            : Number(value)
+          : value,
     }))
   }
 
@@ -53,14 +73,9 @@ export default function ProductFormModal({
     e.preventDefault()
     setError(null)
 
-    for (const campo of campos) {
-      if (campo.requerido && campo.tipo !== 'booleano') {
-        const val = values[campo.key]
-        if (val === '' || val === undefined || val === null) {
-          setError(`El campo "${formatLabel(campo.key)}" es obligatorio`)
-          return
-        }
-      }
+    if (fieldErrors.length > 0) {
+      setError(fieldErrors[0])
+      return
     }
 
     setSaving(true)
@@ -77,7 +92,7 @@ export default function ProductFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-lg dark:bg-neutral-900">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-lg dark:bg-neutral-900">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-medium">
             {product ? 'Editar producto' : 'Nuevo producto'}
@@ -91,48 +106,79 @@ export default function ProductFormModal({
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {campos.map((campo) => (
-            <div key={campo.key}>
-              <Label htmlFor={campo.key}>
-                {formatLabel(campo.key)}
-                {campo.requerido && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </Label>
-              {campo.tipo === 'booleano' ? (
-                <div className="mt-1">
+          {campos.map((campo) => {
+            const currentValue = values[campo.key]
+            const options = optionsByField[campo.key] ?? []
+            const listId = `options-${campo.key}`
+
+            return (
+              <div key={campo.key} className="space-y-1.5">
+                <Label htmlFor={campo.key}>
+                  {campo.label || formatFieldLabel(campo.key)}
+                  {campo.requerido && (
+                    <span className="ml-1 text-red-500">*</span>
+                  )}
+                </Label>
+
+                {campo.tipo === 'booleano' ? (
                   <button
                     type="button"
+                    aria-pressed={Boolean(currentValue)}
                     onClick={() =>
-                      handleChange(campo.key, 'booleano', !values[campo.key])
+                      handleChange(campo.key, 'booleano', !Boolean(currentValue))
                     }
                     className={`inline-flex h-6 w-10 items-center rounded-full transition-colors ${
-                      values[campo.key]
+                      currentValue
                         ? 'bg-green-500'
                         : 'bg-neutral-300 dark:bg-neutral-600'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        values[campo.key] ? 'translate-x-5' : 'translate-x-1'
+                        currentValue ? 'translate-x-5' : 'translate-x-1'
                       }`}
                     />
                   </button>
-                </div>
-              ) : (
-                <input
-                  id={campo.key}
-                  type={campo.tipo === 'numero' ? 'number' : 'text'}
-                  value={values[campo.key] ?? ''}
-                  onChange={(e) =>
-                    handleChange(campo.key, campo.tipo, e.target.value)
-                  }
-                  step={campo.tipo === 'numero' ? '0.01' : undefined}
-                  className="mt-1 h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30"
-                />
-              )}
-            </div>
-          ))}
+                ) : campo.tipo === 'select' ? (
+                  <div className="space-y-1.5">
+                    <Input
+                      id={campo.key}
+                      list={listId}
+                      value={currentValue ?? ''}
+                      placeholder={campo.placeholder || 'Selecciona o escribe una opción'}
+                      onChange={(e) =>
+                        handleChange(campo.key, 'texto', e.target.value)
+                      }
+                    />
+                    <datalist id={listId}>
+                      {options.map((option) => (
+                        <option key={option} value={option} />
+                      ))}
+                    </datalist>
+                    <p className="text-xs text-muted-foreground">
+                      Elige una opción existente o escribe una nueva.
+                    </p>
+                  </div>
+                ) : (
+                  <Input
+                    id={campo.key}
+                    type={campo.tipo === 'numero' ? 'number' : 'text'}
+                    value={currentValue ?? ''}
+                    placeholder={campo.placeholder || formatFieldLabel(campo.key)}
+                    onChange={(e) =>
+                      handleChange(campo.key, campo.tipo, e.target.value)
+                    }
+                    step={campo.tipo === 'numero' ? '0.01' : undefined}
+                    inputMode={campo.tipo === 'numero' ? 'decimal' : undefined}
+                  />
+                )}
+
+                {campo.ayuda && (
+                  <p className="text-xs text-muted-foreground">{campo.ayuda}</p>
+                )}
+              </div>
+            )
+          })}
 
           {error && <p className="text-sm text-red-500">{error}</p>}
 

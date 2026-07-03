@@ -1,4 +1,36 @@
-import type { PaymentOrder, DeliveryOrder, Driver, Employee } from '@/types/payments'
+import type { PaymentOrder, DeliveryOrder, Driver, Employee, Agency, ShalomProduct, StoreProfile } from '@/types/payments'
+
+export const storeProfile: StoreProfile = {
+  name: 'KIRO STORE EIRL',
+  document_type: 'RUC',
+  document: '20123456789',
+  last_name: '',
+  sur_name: '',
+  phone: 999888777,
+  email: 'ventas@kiro.pe',
+  address: 'Av. Larco 1234, Miraflores, Lima',
+}
+
+export const mockAgencies: Agency[] = [
+  { id: 1, nombre: 'LIMA CENTRO', departamento: 'LIMA', provincia: 'LIMA', distrito: 'LIMA', aereo: true, latitud: -12.046, longitud: -77.030 },
+  { id: 2, nombre: 'LIMA NORTE', departamento: 'LIMA', provincia: 'LIMA', distrito: 'INDEPENDENCIA', aereo: true, latitud: -11.991, longitud: -77.054 },
+  { id: 3, nombre: 'LIMA SUR', departamento: 'LIMA', provincia: 'LIMA', distrito: 'CHORRILLOS', aereo: true, latitud: -12.177, longitud: -77.009 },
+  { id: 4, nombre: 'CALLAO', departamento: 'CALLAO', provincia: 'CALLAO', distrito: 'CALLAO', aereo: true, latitud: -12.056, longitud: -77.118 },
+  { id: 5, nombre: 'AREQUIPA CENTRO', departamento: 'AREQUIPA', provincia: 'AREQUIPA', distrito: 'AREQUIPA', aereo: true, latitud: -16.409, longitud: -71.537 },
+  { id: 6, nombre: 'CUSCO', departamento: 'CUSCO', provincia: 'CUSCO', distrito: 'CUSCO', aereo: false, latitud: -13.517, longitud: -71.978 },
+  { id: 7, nombre: 'TRUJILLO', departamento: 'LA LIBERTAD', provincia: 'TRUJILLO', distrito: 'TRUJILLO', aereo: true, latitud: -8.110, longitud: -79.028 },
+  { id: 8, nombre: 'CHICLAYO', departamento: 'LAMBAYEQUE', provincia: 'CHICLAYO', distrito: 'CHICLAYO', aereo: true, latitud: -6.771, longitud: -79.841 },
+  { id: 9, nombre: 'PIURA', departamento: 'PIURA', provincia: 'PIURA', distrito: 'PIURA', aereo: false, latitud: -5.194, longitud: -80.632 },
+  { id: 10, nombre: 'HUANCAYO', departamento: 'JUNIN', provincia: 'HUANCAYO', distrito: 'HUANCAYO', aereo: false, latitud: -12.068, longitud: -75.210 },
+]
+
+export const mockShalomProducts: ShalomProduct[] = [
+  { id: 3, title: 'Sobre', content: 'Hasta 0.5 kg', sub_content: 'Documentos y similares', measurements: { weight: 0.5, width: 0.3, height: 0.02, length: 0.4 } },
+  { id: 1095, title: 'Caja Paquete XXS', content: 'Hasta 1 kg', sub_content: 'Para envíos muy pequeños', measurements: { weight: 1, width: 0.2, height: 0.15, length: 0.25 } },
+  { id: 1096, title: 'Caja Paquete XS', content: 'Hasta 3 kg', sub_content: 'Para envíos pequeños', measurements: { weight: 3, width: 0.25, height: 0.2, length: 0.35 } },
+  { id: 1097, title: 'Caja Paquete S', content: 'Hasta 5 kg', sub_content: 'Para envíos medianos', measurements: { weight: 5, width: 0.3, height: 0.25, length: 0.4 } },
+  { id: 1098, title: 'Otra Medida', content: 'Definí dimensiones', sub_content: 'Para bultos fuera de catálogo', measurements: { weight: 0, width: 0, height: 0, length: 0 } },
+]
 
 export const mockDrivers: Driver[] = [
   { id: 'drv_001', name: 'Juan Pérez López', phone: '+51 999 111 222', vehicle: 'Moto' },
@@ -202,6 +234,47 @@ export const mockPaymentOrders: PaymentOrder[] = [
     createdAt: Date.now() - 1000 * 60 * 25,
     status: 'pending_verification',
   },
+  {
+    id: 'pay_010',
+    purchaseNumber: 'PED-2024-00430',
+    customerName: 'Renato Pizarro Vargas',
+    customerDNI: '45182930',
+    customerPhone: '+51 993 210 876',
+    deliveryAddress: 'Av. Brasil 1500, Jesús María, Lima',
+    products: [
+      { name: 'Monitor 27" 4K', quantity: 1, unitPrice: 1599.00, totalPrice: 1599.00 },
+      { name: 'Base para Monitor', quantity: 1, unitPrice: 89.90, totalPrice: 89.90 },
+    ],
+    totalAmount: 1688.90,
+    currency: 'PEN',
+    paymentMethod: 'transferencia',
+    receiptUrl: 'https://placehold.co/400x600/fef3c7/d97706?text=Transferencia+BCP',
+    paymentReference: 'TRA-2024-99102',
+    paymentBank: 'BCP - Cuenta Corriente',
+    createdAt: Date.now() - 1000 * 60 * 180,
+    status: 'rejected',
+  },
+  {
+    id: 'pay_011',
+    purchaseNumber: 'PED-2024-00431',
+    customerName: 'Daniela Córdova Tapia',
+    customerDNI: '47382910',
+    customerPhone: '+51 992 109 654',
+    deliveryAddress: 'Calle Los Olivos 234, San Miguel, Lima',
+    products: [
+      { name: 'Perfume Importado 100ml', quantity: 1, unitPrice: 239.90, totalPrice: 239.90 },
+      { name: 'Set de Maquillaje Premium', quantity: 1, unitPrice: 159.00, totalPrice: 159.00 },
+      { name: 'Crema Antiage 50ml', quantity: 1, unitPrice: 89.50, totalPrice: 89.50 },
+    ],
+    totalAmount: 488.40,
+    currency: 'PEN',
+    paymentMethod: 'yape',
+    receiptUrl: 'https://placehold.co/400x600/e0f2fe/0284c7?text=Comprobante+Yape',
+    paymentReference: 'YAPE-7F21-AA43',
+    paymentBank: 'Yape - BCP',
+    createdAt: Date.now() - 1000 * 60 * 300,
+    status: 'rejected',
+  },
 ]
 
 export const mockDeliveryOrders: DeliveryOrder[] = [
@@ -221,7 +294,10 @@ export const mockDeliveryOrders: DeliveryOrder[] = [
     currency: 'PEN',
     paymentMethod: 'yape',
     deliveryStatus: 'ready',
+    shippingMethod: null,
     assignedDriver: null,
+    shalomData: null,
+    shalomTracking: null,
     approvedBy: 'Ana Martínez López',
     approvedAt: Date.now() - 1000 * 60 * 60 * 2,
   },
@@ -241,8 +317,11 @@ export const mockDeliveryOrders: DeliveryOrder[] = [
     totalAmount: 734.50,
     currency: 'PEN',
     paymentMethod: 'plin',
-    deliveryStatus: 'ready',
+    deliveryStatus: 'processing',
+    shippingMethod: null,
     assignedDriver: null,
+    shalomData: null,
+    shalomTracking: null,
     approvedBy: 'Roberto Sánchez Torres',
     approvedAt: Date.now() - 1000 * 60 * 60 * 5,
   },
@@ -263,7 +342,10 @@ export const mockDeliveryOrders: DeliveryOrder[] = [
     currency: 'PEN',
     paymentMethod: 'transferencia',
     deliveryStatus: 'in_transit',
+    shippingMethod: 'motorizado',
     assignedDriver: 'Juan Pérez López',
+    shalomData: null,
+    shalomTracking: null,
     approvedBy: 'Ana Martínez López',
     approvedAt: Date.now() - 1000 * 60 * 60 * 8,
   },
@@ -281,8 +363,11 @@ export const mockDeliveryOrders: DeliveryOrder[] = [
     totalAmount: 1890.00,
     currency: 'PEN',
     paymentMethod: 'yape',
-    deliveryStatus: 'ready',
+    deliveryStatus: 'received',
+    shippingMethod: null,
     assignedDriver: null,
+    shalomData: null,
+    shalomTracking: null,
     approvedBy: 'Claudia Torres García',
     approvedAt: Date.now() - 1000 * 60 * 60 * 1,
   },
@@ -302,10 +387,62 @@ export const mockDeliveryOrders: DeliveryOrder[] = [
     totalAmount: 422.90,
     currency: 'PEN',
     paymentMethod: 'tarjeta',
-    deliveryStatus: 'ready',
+    deliveryStatus: 'delivered',
+    shippingMethod: 'courier',
     assignedDriver: null,
+    shalomData: {
+      origin_terminal_id: 1,
+      destiny_terminal_id: 5,
+      product_id: 1096,
+      quantity: 1,
+      payer: 'sender',
+      pickup_code: '3521',
+      sender: {
+        document_type: 'RUC',
+        document: '20123456789',
+        name: 'KIRO STORE EIRL',
+        last_name: '',
+        sur_name: '',
+        phone: 999888777,
+        email: 'ventas@kiro.pe',
+        address: 'Av. Larco 1234, Miraflores, Lima',
+      },
+      receiver: {
+        document_type: 'DNI',
+        document: '43890127',
+        name: 'GABRIELA',
+        last_name: 'MORALES',
+        sur_name: 'TORRES',
+        phone: 995555444,
+        address: 'Av. Benavides 3456, Miraflores, Lima',
+      },
+    },
+    shalomTracking: { guia: '80574902', serie: 's001', codigo: 'CJTW' },
     approvedBy: 'Diego Paredes Ríos',
     approvedAt: Date.now() - 1000 * 60 * 60 * 3,
+  },
+  {
+    id: 'del_006',
+    paymentOrderId: 'pay_105',
+    purchaseNumber: 'PED-2024-00405',
+    customerName: 'Ricardo Luna Paredes',
+    customerDNI: '45918273',
+    customerPhone: '+51 994 444 333',
+    deliveryAddress: 'Av. Universitaria 789, San Miguel, Lima',
+    products: [
+      { name: 'Teclado Mecánico RGB', quantity: 1, unitPrice: 199.00, totalPrice: 199.00 },
+      { name: 'Mouse Gaming Pro', quantity: 1, unitPrice: 149.00, totalPrice: 149.00 },
+    ],
+    totalAmount: 348.00,
+    currency: 'PEN',
+    paymentMethod: 'yape',
+    deliveryStatus: 'confirmed',
+    shippingMethod: 'recojo_en_tienda',
+    assignedDriver: null,
+    shalomData: null,
+    shalomTracking: null,
+    approvedBy: 'Ana Martínez López',
+    approvedAt: Date.now() - 1000 * 60 * 60 * 12,
   },
 ]
 
@@ -328,9 +465,9 @@ export const formatShortDate = (timestamp: number) => {
   const now = Date.now()
   const diff = now - timestamp
   const mins = Math.floor(diff / 60000)
-  if (mins < 60) return `hace ${mins} minutos`
+  if (mins < 60) return `hace ${mins} min`
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `hace ${hours} horas`
+  if (hours < 24) return `hace ${hours} h`
   return new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium' }).format(new Date(timestamp))
 }
 
@@ -340,4 +477,30 @@ export const formatTime = (timestamp: number) => {
     minute: '2-digit',
     hour12: false,
   }).format(new Date(timestamp))
+}
+
+export function paymentToDeliveryOrder(
+  payment: PaymentOrder,
+  approvedBy: string,
+): DeliveryOrder {
+  return {
+    id: `del_${payment.id.replace('pay_', '')}`,
+    paymentOrderId: payment.id,
+    purchaseNumber: payment.purchaseNumber,
+    customerName: payment.customerName,
+    customerDNI: payment.customerDNI,
+    customerPhone: payment.customerPhone,
+    deliveryAddress: payment.deliveryAddress,
+    products: payment.products,
+    totalAmount: payment.totalAmount,
+    currency: payment.currency,
+    paymentMethod: payment.paymentMethod,
+    deliveryStatus: 'ready',
+    shippingMethod: null,
+    assignedDriver: null,
+    shalomData: null,
+    shalomTracking: null,
+    approvedBy,
+    approvedAt: Date.now(),
+  }
 }

@@ -1,20 +1,41 @@
 import { useState } from 'react'
-import { MapPin, Truck, CheckCircle2, Clock, Package, ChevronRight, ListRestart, Search, UserCheck } from 'lucide-react'
+import {
+  MapPin, Truck, CheckCircle2, Package, ChevronRight, ListRestart,
+  Search, UserCheck, Clock, Store, Hash, ArrowRight,
+  Play, PackageCheck, Sparkles,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import DeliveryDetailPanel from '@/components/orders/DeliveryDetailPanel'
 import AssignDriverModal from '@/components/orders/AssignDriverModal'
+import ShalomShippingModal from '@/components/orders/ShalomShippingModal'
 import { mockDeliveryOrders } from '@/data/mockData'
-import { DELIVERY_STATUS_LABELS } from '@/types/payments'
-import { formatCurrency } from '@/data/mockData'
-import type { DeliveryOrder } from '@/types/payments'
+import {
+  DELIVERY_STATUS_LABELS, DELIVERY_STATUS_DOT, DELIVERY_STATUS_TEXT,
+  SHIPPING_METHOD_LABELS,
+} from '@/types/payments'
+import { formatCurrency, formatTime, formatDate } from '@/data/mockData'
+import type { DeliveryOrder, ShippingMethod, ShalomOrderPayload, ShalomTracking } from '@/types/payments'
+
+type SortKey = 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc' | 'shipping_asc'
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'date_desc', label: 'Fecha (más reciente)' },
+  { value: 'date_asc', label: 'Fecha (más antigua)' },
+  { value: 'amount_desc', label: 'Monto (mayor primero)' },
+  { value: 'amount_asc', label: 'Monto (menor primero)' },
+  { value: 'shipping_asc', label: 'Método de envío (A-Z)' },
+]
 
 export default function DeliveryDashboard() {
   const [orders, setOrders] = useState<DeliveryOrder[]>(mockDeliveryOrders)
   const [selectedOrder, setSelectedOrder] = useState<DeliveryOrder | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [assignModalOrderId, setAssignModalOrderId] = useState<string | null>(null)
+  const [shalomModalOrderId, setShalomModalOrderId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortKey, setSortKey] = useState<SortKey>('date_desc')
+  const [sortOpen, setSortOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   const showToast = (msg: string) => {
@@ -22,39 +43,73 @@ export default function DeliveryDashboard() {
     setTimeout(() => setToast(null), 2500)
   }
 
-  const filteredOrders = orders.filter((order) => {
-    if (!searchQuery.trim()) return true
-    const q = searchQuery.trim().toLowerCase()
-    return (
-      order.customerDNI.includes(q) ||
-      order.customerName.toLowerCase().includes(q)
-    )
-  })
+  const filteredOrders = orders
+    .filter((order) => {
+      if (!searchQuery.trim()) return true
+      const q = searchQuery.trim().toLowerCase()
+      return (
+        order.customerDNI.includes(q) ||
+        order.customerName.toLowerCase().includes(q) ||
+        order.purchaseNumber.toLowerCase().includes(q)
+      )
+    })
+    .sort((a, b) => {
+      switch (sortKey) {
+        case 'date_desc': return b.approvedAt - a.approvedAt
+        case 'date_asc': return a.approvedAt - b.approvedAt
+        case 'amount_desc': return b.totalAmount - a.totalAmount
+        case 'amount_asc': return a.totalAmount - b.totalAmount
+        case 'shipping_asc': {
+          const ma = a.shippingMethod ?? ''
+          const mb = b.shippingMethod ?? ''
+          return ma.localeCompare(mb)
+        }
+        default: return 0
+      }
+    })
+
+  const handleSetShippingMethod = (orderId: string, method: ShippingMethod) => {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, shippingMethod: method } : o)))
+  }
 
   const handleAssignDriver = (orderId: string, driverName: string) => {
     setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, assignedDriver: driverName } : o)),
+      prev.map((o) =>
+        o.id === orderId
+          ? { ...o, assignedDriver: driverName, shippingMethod: 'motorizado' as const }
+          : o,
+      ),
     )
     setAssignModalOrderId(null)
     showToast(`Conductor asignado: ${driverName}`)
   }
 
-  const handleMarkInTransit = (orderId: string) => {
+  const handleShalomGenerate = (orderId: string, payload: ShalomOrderPayload, tracking: ShalomTracking) => {
     setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, deliveryStatus: 'in_transit' as const } : o)),
+      prev.map((o) =>
+        o.id === orderId
+          ? { ...o, shippingMethod: 'courier' as const, shalomData: payload, shalomTracking: tracking }
+          : o,
+      ),
     )
-    setPanelOpen(false)
-    setSelectedOrder(null)
-    showToast('Pedido marcado como en camino')
+    setShalomModalOrderId(null)
+    showToast(`Guía Shalom generada: ${tracking.guia}`)
   }
 
-  const handleMarkDelivered = (orderId: string) => {
+  const handleStatusTransition = (orderId: string, nextStatus: DeliveryOrder['deliveryStatus']) => {
     setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, deliveryStatus: 'delivered' as const } : o)),
+      prev.map((o) => (o.id === orderId ? { ...o, deliveryStatus: nextStatus } : o)),
     )
     setPanelOpen(false)
     setSelectedOrder(null)
-    showToast('Pedido entregado exitosamente')
+    const labels: Record<string, string> = {
+      processing: 'Preparación iniciada',
+      ready: 'Pedido listo para entrega',
+      in_transit: 'Pedido en camino',
+      delivered: 'Pedido entregado',
+      confirmed: 'Recepción confirmada',
+    }
+    showToast(labels[nextStatus] || `Estado actualizado: ${DELIVERY_STATUS_LABELS[nextStatus]}`)
   }
 
   const openPanel = (order: DeliveryOrder) => {
@@ -62,9 +117,10 @@ export default function DeliveryDashboard() {
     setPanelOpen(true)
   }
 
-  const readyCount = orders.filter((o) => o.deliveryStatus === 'ready').length
-  const inTransitCount = orders.filter((o) => o.deliveryStatus === 'in_transit').length
-  const deliveredCount = orders.filter((o) => o.deliveryStatus === 'delivered').length
+  const statusCounts = (status: DeliveryOrder['deliveryStatus']) =>
+    orders.filter((o) => o.deliveryStatus === status).length
+
+  const shalomOrder = shalomModalOrderId ? orders.find((o) => o.id === shalomModalOrderId) ?? null : null
 
   return (
     <div className="flex h-full flex-col">
@@ -75,22 +131,30 @@ export default function DeliveryDashboard() {
             <p className="mt-0.5 text-sm text-muted-foreground">
               {searchQuery
                 ? `${filteredOrders.length} de ${orders.length} pedidos`
-                : `${orders.length} pedido${orders.length !== 1 ? 's' : ''} en gesti&oacute;n`
+                : `${orders.length} pedido${orders.length !== 1 ? 's' : ''} en gestión`
               }
             </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground ring-1 ring-foreground/10">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
-              {readyCount} listos
+              {statusCounts('received')} recibidos
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground ring-1 ring-foreground/10">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
-              {inTransitCount} en camino
+              {statusCounts('processing')} en proceso
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground ring-1 ring-foreground/10">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-500" />
+              {statusCounts('ready')} listos
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground ring-1 ring-foreground/10">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500" />
+              {statusCounts('in_transit')} en camino
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground ring-1 ring-foreground/10">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {deliveredCount} entregados
+              {statusCounts('delivered')} entregados
             </span>
           </div>
         </div>
@@ -101,12 +165,44 @@ export default function DeliveryDashboard() {
           <div className="relative max-w-sm flex-1">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Buscar por DNI o nombre de cliente..."
+              placeholder="Buscar por DNI, nombre o pedido..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
             />
           </div>
+
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOpen(!sortOpen)}
+              className="gap-1.5"
+            >
+              <ArrowRight className="h-3 w-3 rotate-90" />
+              {SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? 'Ordenar'}
+            </Button>
+            {sortOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-xl bg-white shadow-xl ring-1 ring-foreground/10">
+                  {SORT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setSortKey(opt.value); setSortOpen(false) }}
+                      className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs transition-colors hover:bg-secondary ${
+                        sortKey === opt.value ? 'font-medium text-foreground' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {sortKey === opt.value && <CheckCircle2 className="h-3 w-3 text-primary" />}
+                      <span className={sortKey === opt.value ? '' : 'ml-5'}>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
           {searchQuery && (
             <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
               Limpiar
@@ -149,9 +245,12 @@ export default function DeliveryDashboard() {
               <DeliveryCard
                 key={order.id}
                 order={order}
-                onAssignDriver={() => setAssignModalOrderId(order.id)}
-                onMarkInTransit={() => handleMarkInTransit(order.id)}
-                onMarkDelivered={() => handleMarkDelivered(order.id)}
+                onSetShippingMethod={(method) => {
+                  if (method === 'motorizado') setAssignModalOrderId(order.id)
+                  else if (method === 'courier') setShalomModalOrderId(order.id)
+                  else handleSetShippingMethod(order.id, method)
+                }}
+                onStatusTransition={(s) => handleStatusTransition(order.id, s)}
                 onViewDetails={() => openPanel(order)}
               />
             ))}
@@ -169,10 +268,20 @@ export default function DeliveryDashboard() {
         open={panelOpen}
         onClose={() => { setPanelOpen(false); setSelectedOrder(null) }}
         order={selectedOrder}
-        onAssignDriver={handleAssignDriver}
-        onMarkInTransit={handleMarkInTransit}
-        onMarkDelivered={handleMarkDelivered}
+        onStatusTransition={(id, s) => handleStatusTransition(id, s)}
+        onSetShippingMethod={(id, m) => handleSetShippingMethod(id, m)}
+        onOpenShalom={(id) => setShalomModalOrderId(id)}
+        onOpenDriverAssignment={(id) => setAssignModalOrderId(id)}
       />
+
+      {shalomOrder && (
+        <ShalomShippingModal
+          open={shalomModalOrderId !== null}
+          onClose={() => setShalomModalOrderId(null)}
+          onGenerate={handleShalomGenerate}
+          order={shalomOrder}
+        />
+      )}
 
       <AssignDriverModal
         open={assignModalOrderId !== null}
@@ -188,128 +297,224 @@ export default function DeliveryDashboard() {
 
 function DeliveryCard({
   order,
-  onAssignDriver,
-  onMarkInTransit,
-  onMarkDelivered,
+  onSetShippingMethod,
+  onStatusTransition,
   onViewDetails,
 }: {
   order: DeliveryOrder
-  onAssignDriver: () => void
-  onMarkInTransit: () => void
-  onMarkDelivered: () => void
+  onSetShippingMethod: (method: ShippingMethod) => void
+  onStatusTransition: (status: DeliveryOrder['deliveryStatus']) => void
   onViewDetails: () => void
 }) {
-  const statusColor =
-    order.deliveryStatus === 'ready'
-      ? 'text-blue-600'
-      : order.deliveryStatus === 'in_transit'
-        ? 'text-amber-600'
-        : 'text-emerald-600'
+  const [showMethodMenu, setShowMethodMenu] = useState(false)
 
-  const StatusIcon =
-    order.deliveryStatus === 'ready'
-      ? Clock
-      : order.deliveryStatus === 'in_transit'
-        ? Truck
-        : CheckCircle2
+  const isTerminal = order.deliveryStatus === 'confirmed' || order.deliveryStatus === 'delivered'
 
-  const statusDot =
-    order.deliveryStatus === 'ready'
-      ? 'bg-blue-500'
-      : order.deliveryStatus === 'in_transit'
-        ? 'bg-amber-500'
-        : 'bg-emerald-500'
+  const shippingIcon = (method: ShippingMethod | null) => {
+    if (method === 'motorizado') return <Truck className="h-3.5 w-3.5" />
+    if (method === 'courier') return <Package className="h-3.5 w-3.5" />
+    if (method === 'recojo_en_tienda') return <Store className="h-3.5 w-3.5" />
+    return null
+  }
 
   return (
     <div
       className={`rounded-xl bg-white ring-1 ring-foreground/10 transition-all hover:ring-foreground/20 ${
-        order.deliveryStatus === 'delivered' ? 'opacity-60' : ''
+        isTerminal ? 'opacity-60' : ''
       }`}
     >
-      <div className="flex items-start justify-between gap-2 border-b border-border px-4 py-3">
-        <p className="font-mono text-xs font-medium text-foreground">{order.purchaseNumber}</p>
-        <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${statusColor}`}>
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${statusDot}`} />
+      {/* Header: Order number + Status */}
+      <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-bold text-foreground tracking-tight">
+              {order.purchaseNumber}
+            </span>
+            {order.shippingMethod === 'courier' && order.shalomTracking && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-mono text-blue-700 ring-1 ring-blue-200">
+                <Hash className="h-2.5 w-2.5" />
+                {order.shalomTracking.guia}
+              </span>
+            )}
+          </div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-foreground" />
+            <span className="text-xs font-semibold text-foreground">
+              {formatTime(order.approvedAt)}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {formatDate(order.approvedAt)}
+            </span>
+          </div>
+        </div>
+        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${DELIVERY_STATUS_TEXT[order.deliveryStatus]} ${DELIVERY_STATUS_DOT[order.deliveryStatus].replace('bg-', 'bg-').replace('500', '100')} bg-opacity-20`}>
+          <span className={`inline-block h-1.5 w-1.5 rounded-full ${DELIVERY_STATUS_DOT[order.deliveryStatus]}`} />
           {DELIVERY_STATUS_LABELS[order.deliveryStatus]}
         </span>
       </div>
 
-      <div className="space-y-1.5 px-4 py-3">
-        <p className="text-sm font-medium text-foreground">{order.customerName}</p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>DNI: {order.customerDNI}</span>
-          <span className="text-border">·</span>
-          <span>{order.customerPhone}</span>
-        </div>
-        <div className="flex items-start gap-1 text-xs text-muted-foreground">
-          <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
-          <span className="line-clamp-1">{order.deliveryAddress}</span>
+      {/* Body: Address (prominent) */}
+      <div className="px-4 pt-3 pb-1">
+        <div className="flex items-start gap-1.5">
+          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground leading-snug">
+            {order.deliveryAddress}
+          </span>
         </div>
       </div>
 
-      <div className="border-t border-border px-4 py-2.5">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
+      {/* Secondary info (low profile) */}
+      <div className="px-4 pb-2">
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70">
+          <span className="font-medium text-muted-foreground/90">{order.customerName}</span>
+          <span>·</span>
+          <span>DNI: {order.customerDNI}</span>
+          <span>·</span>
+          <span>{order.customerPhone}</span>
+        </div>
+      </div>
+
+      {/* Meta row: products + total + payment */}
+      <div className="border-t border-border/50 px-4 py-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70">
             <Package className="h-3 w-3" />
-            <span>
-              {order.products.length} producto{order.products.length !== 1 ? 's' : ''}
-            </span>
+            <span>{order.products.length} producto{order.products.length !== 1 ? 's' : ''}</span>
           </div>
-          <span className="font-medium text-foreground">
+          <span className="text-xs font-semibold text-foreground">
             {formatCurrency(order.totalAmount, order.currency)}
           </span>
         </div>
-        <div className="mt-1 flex items-center gap-1.5 text-xs">
+        <div className="mt-0.5 flex items-center gap-1.5 text-[11px]">
           <span className="text-emerald-600 inline-flex items-center gap-1 font-medium">
             <CheckCircle2 className="h-3 w-3" />
             Pago Aprobado
           </span>
-          <span className="text-border">·</span>
-          <span className="text-muted-foreground inline-flex items-center gap-1">
+          <span className="text-border/50">·</span>
+          <span className="text-muted-foreground/70 inline-flex items-center gap-1">
             <UserCheck className="h-3 w-3" />
             {order.approvedBy}
           </span>
         </div>
       </div>
 
+      {/* Shipping method display */}
+      {order.shippingMethod && (
+        <div className="border-t border-border/50 px-4 py-1.5">
+          <div className="inline-flex items-center gap-1.5 rounded-md bg-secondary/50 px-2 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-foreground/5">
+            {shippingIcon(order.shippingMethod)}
+            {SHIPPING_METHOD_LABELS[order.shippingMethod]}
+            {order.shippingMethod === 'motorizado' && order.assignedDriver && (
+              <span className="text-muted-foreground/70">· {order.assignedDriver}</span>
+            )}
+            {order.shippingMethod === 'recojo_en_tienda' && (
+              <span className="text-muted-foreground/70">· Cliente recoge</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Footer: Actions */}
       <div className="flex items-center gap-1.5 border-t border-border p-3">
+        {/* received → processing */}
+        {order.deliveryStatus === 'received' && (
+          <Button
+            size="xs"
+            className="flex-1 gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => onStatusTransition('processing')}
+          >
+            <Play className="h-3 w-3" />
+            Iniciar preparación
+          </Button>
+        )}
+
+        {/* processing → ready */}
+        {order.deliveryStatus === 'processing' && (
+          <Button
+            size="xs"
+            className="flex-1 gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => onStatusTransition('ready')}
+          >
+            <PackageCheck className="h-3 w-3" />
+            Preparación lista
+          </Button>
+        )}
+
+        {/* ready → choose shipping method → in_transit */}
         {order.deliveryStatus === 'ready' && (
           <>
+            <div className="relative flex-1">
+              <Button
+                size="xs"
+                variant="outline"
+                className="w-full gap-1"
+                onClick={() => setShowMethodMenu(!showMethodMenu)}
+              >
+                <Truck className="h-3 w-3" />
+                {order.shippingMethod ? SHIPPING_METHOD_LABELS[order.shippingMethod] : 'Método de envío'}
+              </Button>
+              {showMethodMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowMethodMenu(false)} />
+                  <div className="absolute bottom-full left-0 z-20 mb-1 w-full min-w-40 rounded-xl bg-white shadow-xl ring-1 ring-foreground/10">
+                    {(['motorizado', 'courier', 'recojo_en_tienda'] as ShippingMethod[]).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => { onSetShippingMethod(m); setShowMethodMenu(false) }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs text-foreground transition-colors hover:bg-secondary first:rounded-t-xl last:rounded-b-xl"
+                      >
+                        {shippingIcon(m)}
+                        {SHIPPING_METHOD_LABELS[m]}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <Button
               size="xs"
-              variant="outline"
-              className="flex-1 gap-1"
-              onClick={onAssignDriver}
+              className="flex-1 gap-1 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              disabled={!order.shippingMethod}
+              onClick={() => onStatusTransition('in_transit')}
             >
-              <Truck className="h-3 w-3" />
-              Conductor
-            </Button>
-            <Button
-              size="xs"
-              className="flex-1 gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={onMarkInTransit}
-            >
-              <Truck className="h-3 w-3" />
+              <ArrowRight className="h-3 w-3" />
               En Camino
             </Button>
           </>
         )}
+
+        {/* in_transit → delivered */}
         {order.deliveryStatus === 'in_transit' && (
           <Button
             size="xs"
             className="flex-1 gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={onMarkDelivered}
+            onClick={() => onStatusTransition('delivered')}
           >
             <CheckCircle2 className="h-3 w-3" />
             Entregado
           </Button>
         )}
+
+        {/* delivered → confirmed */}
         {order.deliveryStatus === 'delivered' && (
-          <div className="flex flex-1 items-center justify-center gap-1.5 text-xs text-emerald-600">
+          <Button
+            size="xs"
+            className="flex-1 gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => onStatusTransition('confirmed')}
+          >
+            <Sparkles className="h-3 w-3" />
+            Confirmar recepción
+          </Button>
+        )}
+
+        {/* confirmed: terminal state */}
+        {order.deliveryStatus === 'confirmed' && (
+          <div className="flex flex-1 items-center justify-center gap-1.5 text-xs text-emerald-700">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            <span className="font-medium">Entregado</span>
+            <span className="font-medium">Completado</span>
           </div>
         )}
+
         <Button size="xs" variant="ghost" className="gap-1" onClick={onViewDetails}>
           <ChevronRight className="h-3 w-3" />
           Detalles

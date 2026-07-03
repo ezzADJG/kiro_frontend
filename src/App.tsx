@@ -14,6 +14,7 @@ import Canales from '@/pages/Canales'
 import AdminCanales from '@/pages/AdminCanales'
 import PaymentVerification from '@/pages/PaymentVerification'
 import DeliveryDashboard from '@/pages/DeliveryDashboard'
+import OrdersTable from '@/pages/OrdersTable'
 import AceptarInvitacion from '@/pages/AceptarInvitacion'
 import RutaProtegida from '@/components/RutaProtegida'
 import DashboardLayout from '@/components/DashboardLayout'
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/dashboard/admin/canales" element={<AdminCanales />} />
                 <Route path="/dashboard/verificacion-pagos" element={<PaymentVerification />} />
                 <Route path="/dashboard/entregas" element={<DeliveryDashboard />} />
+                <Route path="/dashboard/ordenes" element={<OrdersTable />} />
               </Route>
             </Route>
           </Routes>

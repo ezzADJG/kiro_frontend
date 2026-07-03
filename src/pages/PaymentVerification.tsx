@@ -1,12 +1,18 @@
 import { useState } from 'react'
-import { CheckCircle2, X, MapPin, Clock, Search, ChevronRight } from 'lucide-react'
+import { CheckCircle2, X, Clock, Search, ChevronRight, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import PaymentDetailPanel from '@/components/orders/PaymentDetailPanel'
-import { mockPaymentOrders } from '@/data/mockData'
-import { PAYMENT_METHOD_LABELS } from '@/types/payments'
-import { formatCurrency, formatTime } from '@/data/mockData'
+import ReassignModal from '@/components/orders/ReassignModal'
+import { mockPaymentOrders, formatCurrency } from '@/data/mockData'
 import type { PaymentOrder } from '@/types/payments'
+
+function formatDateTimeShort(timestamp: number) {
+  return new Intl.DateTimeFormat('es-PE', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(timestamp))
+}
 
 export default function PaymentVerification() {
   const [orders, setOrders] = useState<PaymentOrder[]>(mockPaymentOrders)
@@ -14,6 +20,9 @@ export default function PaymentVerification() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [toast, setToast] = useState<string | null>(null)
+
+  const [rejectReassignOpen, setRejectReassignOpen] = useState(false)
+  const [rejectReassignOrderId, setRejectReassignOrderId] = useState<string | null>(null)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -36,17 +45,35 @@ export default function PaymentVerification() {
     showToast('Pago aprobado — Pedido listo para entrega')
   }
 
-  const handleReject = (id: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== id))
+  const handleRejectStart = (id: string) => {
+    setRejectReassignOrderId(id)
+    setRejectReassignOpen(true)
+  }
+
+  const handleRejectConfirm = (_empId: string, empName: string) => {
+    if (rejectReassignOrderId) {
+      setOrders((prev) => prev.filter((o) => o.id !== rejectReassignOrderId))
+    }
+    setRejectReassignOpen(false)
+    setRejectReassignOrderId(null)
     setPanelOpen(false)
     setSelectedOrder(null)
-    showToast('Pago rechazado')
+    showToast(`Pago rechazado — Chat asignado a ${empName}`)
+  }
+
+  const handleRejectCancel = () => {
+    setRejectReassignOpen(false)
+    setRejectReassignOrderId(null)
   }
 
   const handleReassign = (_id: string, employeeName: string) => {
     setPanelOpen(false)
     setSelectedOrder(null)
     showToast(`Verificación reasignada a ${employeeName}`)
+  }
+
+  const handleRequestReceipt = () => {
+    showToast('Solicitud de nuevo comprobante enviada al cliente')
   }
 
   const openPanel = (order: PaymentOrder) => {
@@ -128,7 +155,8 @@ export default function PaymentVerification() {
                 key={order.id}
                 order={order}
                 onApprove={handleApprove}
-                onReject={handleReject}
+                onRejectStart={handleRejectStart}
+                onRequestReceipt={handleRequestReceipt}
                 onViewDetails={() => openPanel(order)}
               />
             ))}
@@ -147,8 +175,18 @@ export default function PaymentVerification() {
         onClose={() => { setPanelOpen(false); setSelectedOrder(null) }}
         order={selectedOrder}
         onApprove={handleApprove}
-        onReject={handleReject}
+        onRejectStart={handleRejectStart}
         onReassign={handleReassign}
+        onRequestReceipt={handleRequestReceipt}
+      />
+
+      <ReassignModal
+        open={rejectReassignOpen}
+        onClose={handleRejectCancel}
+        onReassign={handleRejectConfirm}
+        currentOrderNumber={orders.find((o) => o.id === rejectReassignOrderId)?.purchaseNumber}
+        title="Asignar chat del cliente"
+        description="Selecciona a quién se asignará el chat con el cliente para gestionar el comprobante."
       />
     </div>
   )
@@ -157,34 +195,28 @@ export default function PaymentVerification() {
 function PaymentCard({
   order,
   onApprove,
-  onReject,
+  onRejectStart,
+  onRequestReceipt,
   onViewDetails,
 }: {
   order: PaymentOrder
   onApprove: (id: string) => void
-  onReject: (id: string) => void
+  onRejectStart: (id: string) => void
+  onRequestReceipt: () => void
   onViewDetails: () => void
 }) {
   return (
     <div className="rounded-xl bg-white ring-1 ring-foreground/10 transition-all hover:ring-foreground/20">
-      <div className="p-4 pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <p className="truncate text-sm font-medium text-foreground">{order.customerName}</p>
-        </div>
-        <p className="text-xs text-muted-foreground">DNI: {order.customerDNI}</p>
-        <p className="font-mono text-xs text-muted-foreground">{order.purchaseNumber}</p>
+      <div className="p-4 pb-3 space-y-0.5">
+        <p className="text-sm font-medium text-foreground">{order.paymentReference}</p>
+        <p className="text-sm font-medium text-foreground">{formatCurrency(order.totalAmount, order.currency)}</p>
+        <p className="text-sm font-medium text-foreground">{order.paymentBank}</p>
+        <p className="text-sm font-medium text-foreground">{formatDateTimeShort(order.createdAt)}</p>
 
-        <p className="mt-2 text-sm font-semibold text-foreground">
-          {formatCurrency(order.totalAmount, order.currency)}
-        </p>
-        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>{PAYMENT_METHOD_LABELS[order.paymentMethod]}</span>
-          <span className="text-border">·</span>
-          <span>{formatTime(order.createdAt)}</span>
-        </div>
-        <div className="mt-0.5 flex items-start gap-1 text-xs text-muted-foreground">
-          <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
-          <span className="line-clamp-1">{order.deliveryAddress}</span>
+        <div className="pt-2 space-y-0.5">
+          <p className="text-xs text-muted-foreground">{order.customerName}</p>
+          <p className="text-xs text-muted-foreground">DNI: {order.customerDNI}</p>
+          <p className="font-mono text-xs text-muted-foreground">{order.purchaseNumber}</p>
         </div>
       </div>
 
@@ -208,10 +240,19 @@ function PaymentCard({
           size="xs"
           variant="outline"
           className="flex-1 gap-1 text-destructive"
-          onClick={() => onReject(order.id)}
+          onClick={() => onRejectStart(order.id)}
         >
           <X className="h-3 w-3" />
           Rechazar
+        </Button>
+        <Button
+          size="xs"
+          variant="outline"
+          className="gap-1"
+          onClick={onRequestReceipt}
+        >
+          <Receipt className="h-3 w-3" />
+          Pedir comprobante
         </Button>
         <Button
           size="xs"

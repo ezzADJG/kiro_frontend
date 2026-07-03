@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { Package, User, CreditCard, Banknote, MapPin, Building2, Receipt, CheckCircle2, Loader2, X, ArrowRight, Clock } from 'lucide-react'
+import { Package, User, Banknote, MapPin, Building2, Receipt, CheckCircle2, Loader2, X, ArrowRight, Ban } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import SlidePanel from './SlidePanel'
-import StatusBadge from './StatusBadge'
 import ReassignModal from './ReassignModal'
 import type { PaymentOrder } from '@/types/payments'
 import { PAYMENT_METHOD_LABELS, PAYMENT_VERIFICATION_STATUS_LABELS } from '@/types/payments'
@@ -13,11 +12,13 @@ interface PaymentDetailPanelProps {
   onClose: () => void
   order: PaymentOrder | null
   onApprove: (orderId: string) => void
-  onReject: (orderId: string) => void
+  onReject?: (orderId: string) => void
+  onRejectStart?: (orderId: string) => void
   onReassign: (orderId: string, employeeName: string) => void
+  onRequestReceipt?: () => void
 }
 
-function InfoRow({ label, value, icon: Icon }: { label: string; value: string; icon?: React.ElementType }) {
+function InfoRow({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon?: React.ElementType }) {
   return (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -39,7 +40,9 @@ export default function PaymentDetailPanel({
   order,
   onApprove,
   onReject,
+  onRejectStart,
   onReassign,
+  onRequestReceipt,
 }: PaymentDetailPanelProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [reassignOpen, setReassignOpen] = useState(false)
@@ -60,7 +63,12 @@ export default function PaymentDetailPanel({
         title="Verificación de pago"
         subtitle={order.purchaseNumber}
         icon={Receipt}
-        footer={
+        footer={order.status === 'rejected' ? (
+          <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+            <Ban className="h-4 w-4 text-red-500" />
+            <span className="font-medium">Este pedido fue rechazado</span>
+          </div>
+        ) : (
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -80,7 +88,7 @@ export default function PaymentDetailPanel({
                 size="sm"
                 variant="outline"
                 className="w-full gap-1.5 text-destructive"
-                onClick={() => handleAction('reject', () => onReject(order.id))}
+                onClick={() => handleAction('reject', () => onRejectStart ? onRejectStart(order.id) : onReject?.(order.id))}
                 disabled={actionLoading !== null}
               >
                 {actionLoading === 'reject' ? (
@@ -101,8 +109,20 @@ export default function PaymentDetailPanel({
               <ArrowRight className="h-3.5 w-3.5" />
               Reasignar a otra persona
             </Button>
+            {onRequestReceipt && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full gap-1.5"
+                onClick={onRequestReceipt}
+                disabled={actionLoading !== null}
+              >
+                <Receipt className="h-3.5 w-3.5" />
+                Pedir nuevo comprobante
+              </Button>
+            )}
           </div>
-        }
+        )}
       >
         <div className="space-y-4">
           <SectionCard title="Cliente" icon={User}>

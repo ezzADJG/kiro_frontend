@@ -33,7 +33,7 @@ export default function AssignDriverModal({ open, onClose, onAssign, currentOrde
         >
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Asignar conductor</h3>
+              <h3 className="text-sm font-semibold text-foreground">Motorizado</h3>
               <p className="text-xs text-muted-foreground">{currentOrderNumber}</p>
             </div>
             <button
@@ -45,7 +45,7 @@ export default function AssignDriverModal({ open, onClose, onAssign, currentOrde
           </div>
           <div className="px-6 py-4">
             <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Seleccionar conductor
+              Seleccionar conductor motorizado
             </p>
             <div className="space-y-1.5">
               {mockDrivers.map((drv) => (

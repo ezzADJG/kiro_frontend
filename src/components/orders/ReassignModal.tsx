@@ -7,10 +7,19 @@ interface ReassignModalProps {
   open: boolean
   onClose: () => void
   onReassign: (employeeId: string, employeeName: string) => void
-  currentOrderNumber: string
+  currentOrderNumber?: string
+  title?: string
+  description?: string
 }
 
-export default function ReassignModal({ open, onClose, onReassign, currentOrderNumber }: ReassignModalProps) {
+export default function ReassignModal({
+  open,
+  onClose,
+  onReassign,
+  currentOrderNumber,
+  title = 'Reasignar verificación',
+  description,
+}: ReassignModalProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   if (!open) return null
@@ -33,8 +42,9 @@ export default function ReassignModal({ open, onClose, onReassign, currentOrderN
         >
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Reasignar verificación</h3>
-              <p className="text-xs text-muted-foreground">{currentOrderNumber}</p>
+              <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+              {currentOrderNumber && <p className="text-xs text-muted-foreground">{currentOrderNumber}</p>}
+              {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
             </div>
             <button
               onClick={onClose}

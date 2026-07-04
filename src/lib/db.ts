@@ -159,8 +159,8 @@ export function createProduct(
   businessId: string,
   data: Record<string, any>
 ) {
-  const ref = productsRef(businessId)
-  return push(ref, data)
+  const dbRef = productsRef(businessId)
+  return push(dbRef, data)
 }
 
 export function updateProduct(
@@ -169,4 +169,34 @@ export function updateProduct(
   data: Record<string, any>
 ) {
   return update(productRef(businessId, productId), data)
+}
+
+export function subscribeServices(
+  businessId: string,
+  callback: (data: Record<string, any> | null) => void
+): Unsubscribe {
+  const dbRef = servicesRef(businessId)
+  const unsubscribe = onValue(dbRef, (snapshot) => {
+    callback(snapshot.val())
+  })
+  return () => {
+    off(dbRef)
+    unsubscribe()
+  }
+}
+
+export function createService(
+  businessId: string,
+  data: Record<string, any>
+) {
+  const dbRef = servicesRef(businessId)
+  return push(dbRef, data)
+}
+
+export function updateService(
+  businessId: string,
+  serviceId: string,
+  data: Record<string, any>
+) {
+  return update(serviceRef(businessId, serviceId), data)
 }

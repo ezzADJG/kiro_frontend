@@ -46,9 +46,15 @@ export interface BusinessTypeField {
   placeholder?: string
 }
 
+export type BusinessModule = 'stock' | 'services'
+
 export interface BusinessType {
   label: string
-  stockSchema: {
+  modules: BusinessModule[]
+  stockSchema?: {
+    campos: BusinessTypeField[]
+  }
+  serviceSchema?: {
     campos: BusinessTypeField[]
   }
 }

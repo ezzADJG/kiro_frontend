@@ -142,12 +142,8 @@ export interface BusinessProduct {
 }
 
 export interface BusinessService {
-  name: string
-  price: number
-  durationMinutes: number
-  active: boolean
-  description?: string
-  category?: string
+  activo: boolean
   createdAt: number
   updatedAt: number
+  [key: string]: string | number | boolean | undefined
 }

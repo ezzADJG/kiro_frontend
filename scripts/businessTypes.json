@@ -1,10 +1,10 @@
 {
   "restaurant": {
     "label": "Restaurante",
+    "modules": ["stock"],
     "stockSchema": {
       "campos": [
         { "key": "nombre", "label": "Nombre del plato", "tipo": "texto", "requerido": true, "placeholder": "Ej. Lomo saltado" },
-        { "key": "handle", "label": "Handle", "tipo": "texto", "requerido": true, "placeholder": "lomo-saltado" },
         { "key": "descripcion_corta", "label": "Descripción WhatsApp", "tipo": "texto", "requerido": false, "placeholder": "Texto corto para compartir" },
         { "key": "descripcion_larga", "label": "Descripción completa", "tipo": "texto", "requerido": false, "placeholder": "Ingredientes, preparación, porción..." },
         { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": true, "placeholder": "Plato, bebida, postre..." },
@@ -16,10 +16,10 @@
   },
   "retail": {
     "label": "Tienda Retail",
+    "modules": ["stock"],
     "stockSchema": {
       "campos": [
         { "key": "nombre", "label": "Nombre del producto", "tipo": "texto", "requerido": true, "placeholder": "Ej. Camiseta básica" },
-        { "key": "handle", "label": "Handle", "tipo": "texto", "requerido": true, "placeholder": "camiseta-basica" },
         { "key": "descripcion_corta", "label": "Descripción WhatsApp", "tipo": "texto", "requerido": false, "placeholder": "Texto corto para compartir" },
         { "key": "descripcion_larga", "label": "Descripción completa", "tipo": "texto", "requerido": false, "placeholder": "Materiales, uso, cuidados..." },
         { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": true, "placeholder": "Camisetas, pantalones..." },
@@ -38,10 +38,10 @@
   },
   "tienda_ropa": {
     "label": "Tienda de Ropa",
+    "modules": ["stock"],
     "stockSchema": {
       "campos": [
         { "key": "nombre", "label": "Nombre del producto", "tipo": "texto", "requerido": true, "placeholder": "Ej. Camiseta básica" },
-        { "key": "handle", "label": "Handle", "tipo": "texto", "requerido": true, "placeholder": "camiseta-basica" },
         { "key": "descripcion_corta", "label": "Descripción WhatsApp", "tipo": "texto", "requerido": false, "placeholder": "Texto corto para compartir" },
         { "key": "descripcion_larga", "label": "Descripción completa", "tipo": "texto", "requerido": false, "placeholder": "Materiales, uso, cuidados..." },
         { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": true, "placeholder": "Camisetas, pantalones..." },
@@ -60,68 +60,109 @@
   },
   "barberia": {
     "label": "Barbería",
+    "modules": ["stock", "services"],
     "stockSchema": {
       "campos": [
-        { "key": "nombre", "tipo": "texto", "requerido": true },
-        { "key": "descripcion", "tipo": "texto", "requerido": false },
-        { "key": "precio", "tipo": "numero", "requerido": true },
-        { "key": "stock_actual", "tipo": "numero", "requerido": true },
-        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false }
+        { "key": "nombre", "label": "Nombre del producto", "tipo": "texto", "requerido": true, "placeholder": "Ej. Shampoo profesional" },
+        { "key": "descripcion", "tipo": "texto", "requerido": false, "placeholder": "Descripción del producto" },
+        { "key": "precio", "label": "Precio", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "stock_actual", "label": "Stock actual", "tipo": "numero", "requerido": true, "placeholder": "0" },
+        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false, "placeholder": "Categoría" }
+      ]
+    },
+    "serviceSchema": {
+      "campos": [
+        { "key": "nombre", "label": "Nombre del servicio", "tipo": "texto", "requerido": true, "placeholder": "Ej. Corte de cabello" },
+        { "key": "descripcion", "tipo": "texto", "requerido": false, "placeholder": "Descripción del servicio" },
+        { "key": "precio", "label": "Precio", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "duracion_minutos", "label": "Duración (minutos)", "tipo": "numero", "requerido": true, "placeholder": "30" },
+        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false, "placeholder": "Categoría" }
       ]
     }
   },
   "taller_mecanico": {
     "label": "Taller Mecánico",
+    "modules": ["stock", "services"],
     "stockSchema": {
       "campos": [
-        { "key": "nombre", "tipo": "texto", "requerido": true },
-        { "key": "descripcion", "tipo": "texto", "requerido": false },
-        { "key": "precio_compra", "tipo": "numero", "requerido": true },
-        { "key": "precio_venta", "tipo": "numero", "requerido": true },
-        { "key": "stock_actual", "tipo": "numero", "requerido": true },
-        { "key": "proveedor", "label": "Proveedor", "tipo": "select", "requerido": false },
-        { "key": "codigo_producto", "tipo": "texto", "requerido": false }
+        { "key": "nombre", "label": "Nombre del producto", "tipo": "texto", "requerido": true, "placeholder": "Ej. Filtro de aceite" },
+        { "key": "descripcion", "tipo": "texto", "requerido": false, "placeholder": "Descripción del producto" },
+        { "key": "precio_compra", "label": "Precio de compra", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "precio_venta", "label": "Precio de venta", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "stock_actual", "label": "Stock actual", "tipo": "numero", "requerido": true, "placeholder": "0" },
+        { "key": "proveedor", "label": "Proveedor", "tipo": "select", "requerido": false, "placeholder": "Proveedor" },
+        { "key": "codigo_producto", "label": "Código de producto", "tipo": "texto", "requerido": false, "placeholder": "Código interno" }
+      ]
+    },
+    "serviceSchema": {
+      "campos": [
+        { "key": "nombre", "label": "Nombre del servicio", "tipo": "texto", "requerido": true, "placeholder": "Ej. Cambio de aceite" },
+        { "key": "descripcion", "tipo": "texto", "requerido": false, "placeholder": "Descripción del servicio" },
+        { "key": "precio_venta", "label": "Precio", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "duracion_minutos", "label": "Duración (minutos)", "tipo": "numero", "requerido": true, "placeholder": "60" },
+        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false, "placeholder": "Categoría" }
       ]
     }
   },
   "hotel": {
     "label": "Hotel",
+    "modules": ["stock", "services"],
     "stockSchema": {
       "campos": [
-        { "key": "nombre", "tipo": "texto", "requerido": true },
-        { "key": "descripcion", "tipo": "texto", "requerido": false },
-        { "key": "precio", "tipo": "numero", "requerido": true },
-        { "key": "stock_actual", "tipo": "numero", "requerido": true },
-        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false }
+        { "key": "nombre", "label": "Nombre del producto", "tipo": "texto", "requerido": true, "placeholder": "Ej. Kit de amenities" },
+        { "key": "descripcion", "tipo": "texto", "requerido": false, "placeholder": "Descripción del producto" },
+        { "key": "precio", "label": "Precio", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "stock_actual", "label": "Stock actual", "tipo": "numero", "requerido": true, "placeholder": "0" },
+        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false, "placeholder": "Categoría" }
+      ]
+    },
+    "serviceSchema": {
+      "campos": [
+        { "key": "nombre", "label": "Nombre del servicio", "tipo": "texto", "requerido": true, "placeholder": "Ej. Habitación doble" },
+        { "key": "descripcion", "tipo": "texto", "requerido": false, "placeholder": "Descripción del servicio" },
+        { "key": "precio", "label": "Precio por noche", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "duracion_minutos", "label": "Duración (minutos)", "tipo": "numero", "requerido": false, "placeholder": "1440 (1 día)" },
+        { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": false, "placeholder": "Categoría" }
       ]
     }
   },
   "clinica": {
     "label": "Clínica",
+    "modules": ["stock", "services"],
     "stockSchema": {
       "campos": [
-        { "key": "nombre", "tipo": "texto", "requerido": true },
-        { "key": "descripcion", "tipo": "texto", "requerido": false },
-        { "key": "precio_compra", "tipo": "numero", "requerido": true },
-        { "key": "precio_venta", "tipo": "numero", "requerido": true },
-        { "key": "stock_actual", "tipo": "numero", "requerido": true },
-        { "key": "lote", "tipo": "texto", "requerido": false },
-        { "key": "fecha_vencimiento", "tipo": "texto", "requerido": false }
+        { "key": "nombre", "label": "Nombre del producto", "tipo": "texto", "requerido": true, "placeholder": "Ej. Guantes quirúrgicos" },
+        { "key": "descripcion", "tipo": "texto", "requerido": false, "placeholder": "Descripción del producto" },
+        { "key": "precio_compra", "label": "Precio de compra", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "precio_venta", "label": "Precio de venta", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "stock_actual", "label": "Stock actual", "tipo": "numero", "requerido": true, "placeholder": "0" },
+        { "key": "lote", "label": "Lote", "tipo": "texto", "requerido": false, "placeholder": "Número de lote" },
+        { "key": "fecha_vencimiento", "label": "Fecha de vencimiento", "tipo": "texto", "requerido": false, "placeholder": "AAAA-MM-DD" }
+      ]
+    },
+    "serviceSchema": {
+      "campos": [
+        { "key": "nombre", "label": "Nombre del servicio", "tipo": "texto", "requerido": true, "placeholder": "Ej. Consulta general" },
+        { "key": "descripcion", "tipo": "texto", "requerido": false, "placeholder": "Descripción del servicio" },
+        { "key": "precio", "label": "Precio", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "duracion_minutos", "label": "Duración (minutos)", "tipo": "numero", "requerido": true, "placeholder": "30" },
+        { "key": "especialidad", "label": "Especialidad", "tipo": "select", "requerido": false, "placeholder": "Especialidad" }
       ]
     }
   },
   "inmobiliaria": {
     "label": "Inmobiliaria",
-    "stockSchema": {
+    "modules": ["services"],
+    "serviceSchema": {
       "campos": [
-        { "key": "nombre", "tipo": "texto", "requerido": true },
-        { "key": "descripcion", "tipo": "texto", "requerido": false },
-        { "key": "precio", "tipo": "numero", "requerido": true },
-        { "key": "tipo_propiedad", "label": "Tipo de propiedad", "tipo": "select", "requerido": true },
-        { "key": "area_m2", "tipo": "numero", "requerido": false },
-        { "key": "habitaciones", "tipo": "numero", "requerido": false },
-        { "key": "ubicacion", "tipo": "texto", "requerido": false },
-        { "key": "disponible", "tipo": "booleano", "requerido": false }
+        { "key": "nombre", "label": "Nombre de la propiedad", "tipo": "texto", "requerido": true, "placeholder": "Ej. Departamento en Miraflores" },
+        { "key": "descripcion", "tipo": "texto", "requerido": false, "placeholder": "Descripción de la propiedad" },
+        { "key": "precio", "label": "Precio", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+        { "key": "tipo_propiedad", "label": "Tipo de propiedad", "tipo": "select", "requerido": true, "placeholder": "Casa, departamento, terreno..." },
+        { "key": "area_m2", "label": "Área (m²)", "tipo": "numero", "requerido": false, "placeholder": "0" },
+        { "key": "habitaciones", "label": "Habitaciones", "tipo": "numero", "requerido": false, "placeholder": "0" },
+        { "key": "ubicacion", "label": "Ubicación", "tipo": "texto", "requerido": false, "placeholder": "Dirección o zona" },
+        { "key": "disponible", "label": "Disponible", "tipo": "booleano", "requerido": false }
       ]
     }
   }

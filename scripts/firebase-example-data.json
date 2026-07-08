@@ -1,0 +1,203 @@
+{
+  "businessTypes": {
+    "restaurant": {
+      "label": "Restaurante",
+      "stockSchema": {
+        "campos": [
+          { "key": "nombre", "label": "Nombre del plato", "tipo": "texto", "requerido": true, "placeholder": "Ej. Lomo saltado" },
+          { "key": "handle", "label": "Handle", "tipo": "texto", "requerido": true, "placeholder": "lomo-saltado" },
+          { "key": "descripcion_corta", "label": "Descripción WhatsApp", "tipo": "texto", "requerido": false, "placeholder": "Texto corto para compartir" },
+          { "key": "descripcion_larga", "label": "Descripción completa", "tipo": "texto", "requerido": false, "placeholder": "Ingredientes, preparación, porción..." },
+          { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": true, "placeholder": "Plato, bebida, postre..." },
+          { "key": "precio", "label": "Precio", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+          { "key": "unidad", "label": "Unidad", "tipo": "texto", "requerido": false, "placeholder": "plato, porción, vaso..." },
+          { "key": "disponible", "label": "Disponible", "tipo": "booleano", "requerido": false }
+        ]
+      }
+    },
+    "retail": {
+      "label": "Tienda Retail",
+      "stockSchema": {
+        "campos": [
+          { "key": "nombre", "label": "Nombre del producto", "tipo": "texto", "requerido": true, "placeholder": "Ej. Camiseta básica" },
+          { "key": "handle", "label": "Handle", "tipo": "texto", "requerido": true, "placeholder": "camiseta-basica" },
+          { "key": "descripcion_corta", "label": "Descripción WhatsApp", "tipo": "texto", "requerido": false, "placeholder": "Texto corto para compartir" },
+          { "key": "descripcion_larga", "label": "Descripción completa", "tipo": "texto", "requerido": false, "placeholder": "Materiales, uso, cuidados..." },
+          { "key": "categoria", "label": "Categoría", "tipo": "select", "requerido": true, "placeholder": "Camisetas, pantalones..." },
+          { "key": "marca", "label": "Marca", "tipo": "select", "requerido": false, "placeholder": "Marca" },
+          { "key": "proveedor", "label": "Proveedor", "tipo": "select", "requerido": false, "placeholder": "Proveedor" },
+          { "key": "sku", "label": "SKU", "tipo": "texto", "requerido": false, "placeholder": "SKU interno" },
+          { "key": "codigo_barra", "label": "Código de barra", "tipo": "texto", "requerido": false, "placeholder": "Código de barras" },
+          { "key": "precio", "label": "Precio", "tipo": "numero", "requerido": true, "placeholder": "0.00" },
+          { "key": "stock", "label": "Stock", "tipo": "numero", "requerido": true, "placeholder": "0" },
+          { "key": "stock_minimo", "label": "Stock mínimo", "tipo": "numero", "requerido": false, "placeholder": "0" },
+          { "key": "unidad", "label": "Unidad", "tipo": "texto", "requerido": false, "placeholder": "unidad, caja, kg..." },
+          { "key": "color", "label": "Color", "tipo": "select", "requerido": false, "placeholder": "Color" },
+          { "key": "talla", "label": "Talla", "tipo": "select", "requerido": false, "placeholder": "Talla" }
+        ]
+      }
+    }
+  },
+  "businesses": {
+    "demo_retail_001": {
+      "businessName": "Demo Retail SAC",
+      "tradeName": "Demo Retail",
+      "ruc": "20123456789",
+      "category": "Retail",
+      "industry": "retail",
+      "country": "PE",
+      "currency": "PEN",
+      "timezone": "America/Lima",
+      "email": "demo.retail@kiro.test",
+      "phone": "+51999999001",
+      "address": {
+        "street": "Av. Demo 123",
+        "district": "Miraflores",
+        "province": "Lima",
+        "department": "Lima"
+      },
+      "modules": {
+        "inventory": true,
+        "services": false,
+        "employees": false,
+        "appointments": false
+      },
+      "ownerId": "demo_uid_retail",
+      "status": "active",
+      "createdAt": 1750000000000,
+      "updatedAt": 1750000000000
+    },
+    "demo_restaurant_001": {
+      "businessName": "Demo Restaurant SAC",
+      "tradeName": "Demo Restaurant",
+      "ruc": "20987654321",
+      "category": "Restaurant",
+      "industry": "restaurant",
+      "country": "PE",
+      "currency": "PEN",
+      "timezone": "America/Lima",
+      "email": "demo.restaurant@kiro.test",
+      "phone": "+51999999002",
+      "address": {
+        "street": "Jr. Demo 456",
+        "district": "Surco",
+        "province": "Lima",
+        "department": "Lima"
+      },
+      "modules": {
+        "inventory": true,
+        "services": false,
+        "employees": false,
+        "appointments": false
+      },
+      "ownerId": "demo_uid_restaurant",
+      "status": "active",
+      "createdAt": 1750000000000,
+      "updatedAt": 1750000000000
+    }
+  },
+  "userBusinesses": {
+    "demo_uid_retail": {
+      "demo_retail_001": {
+        "role": "owner",
+        "active": true,
+        "joinedAt": 1750000000000
+      }
+    },
+    "demo_uid_restaurant": {
+      "demo_restaurant_001": {
+        "role": "owner",
+        "active": true,
+        "joinedAt": 1750000000000
+      }
+    }
+  },
+  "businessUsers": {
+    "demo_retail_001": {
+      "demo_uid_retail": {
+        "role": "owner",
+        "active": true,
+        "joinedAt": 1750000000000
+      }
+    },
+    "demo_restaurant_001": {
+      "demo_uid_restaurant": {
+        "role": "owner",
+        "active": true,
+        "joinedAt": 1750000000000
+      }
+    }
+  },
+  "products": {
+    "demo_retail_001": {
+      "demo_retail_001_item_1": {
+        "activo": true,
+        "createdAt": 1750000000000,
+        "updatedAt": 1750000000000,
+        "nombre": "Camiseta básica algodón",
+        "handle": "camiseta-basica-algodon",
+        "descripcion_corta": "Camiseta de algodón suave para uso diario.",
+        "descripcion_larga": "Algodón 100%, corte regular, cómoda y resistente.",
+        "categoria": "Camisetas",
+        "marca": "Kiro Wear",
+        "proveedor": "Proveedor Demo SRL",
+        "sku": "CAM-BAS-001",
+        "codigo_barra": "775000000001",
+        "precio": 45,
+        "stock": 24,
+        "stock_minimo": 6,
+        "unidad": "unidad",
+        "color": "Blanco",
+        "talla": "M"
+      },
+      "demo_retail_001_item_2": {
+        "activo": true,
+        "createdAt": 1750000000000,
+        "updatedAt": 1750000000000,
+        "nombre": "Jean clásico",
+        "handle": "jean-clasico",
+        "descripcion_corta": "Jean de corte recto y cómodo.",
+        "descripcion_larga": "Denim stretch, tiro medio, ideal para uso casual.",
+        "categoria": "Pantalones",
+        "marca": "Blue North",
+        "proveedor": "Proveedor Demo SRL",
+        "sku": "JEA-CLS-010",
+        "codigo_barra": "775000000002",
+        "precio": 89,
+        "stock": 12,
+        "stock_minimo": 4,
+        "unidad": "unidad",
+        "color": "Azul",
+        "talla": "32"
+      }
+    },
+    "demo_restaurant_001": {
+      "demo_restaurant_001_item_1": {
+        "activo": true,
+        "createdAt": 1750000000000,
+        "updatedAt": 1750000000000,
+        "nombre": "Lomo saltado",
+        "handle": "lomo-saltado",
+        "descripcion_corta": "Lomo saltado clásico con arroz y papas.",
+        "descripcion_larga": "Carne salteada con cebolla, tomate, salsa de soya y papas fritas.",
+        "categoria": "Plato principal",
+        "precio": 32,
+        "unidad": "plato",
+        "disponible": true
+      },
+      "demo_restaurant_001_item_2": {
+        "activo": true,
+        "createdAt": 1750000000000,
+        "updatedAt": 1750000000000,
+        "nombre": "Chicha morada",
+        "handle": "chicha-morada",
+        "descripcion_corta": "Bebida tradicional fría.",
+        "descripcion_larga": "Preparada con maíz morado, piña, canela y clavo de olor.",
+        "categoria": "Bebida",
+        "precio": 9,
+        "unidad": "vaso",
+        "disponible": true
+      }
+    }
+  }
+}

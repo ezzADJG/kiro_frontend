@@ -7,6 +7,8 @@ import Registro from '@/pages/Registro'
 import RecuperarContrasena from '@/pages/RecuperarContrasena'
 import Inicio from '@/pages/Inicio'
 import ConfigurarNegocio from '@/pages/ConfigurarNegocio'
+import ConfiguracionIndex from '@/pages/ConfiguracionIndex'
+import ConfiguracionEmpaques from '@/pages/ConfiguracionEmpaques'
 import Stock from '@/pages/Stock'
 import Chats from '@/pages/Chats'
 import Equipo from '@/pages/Equipo'
@@ -35,6 +37,8 @@ export default function App() {
                 <Route path="/dashboard/chats" element={<Chats />} />
                 <Route path="/dashboard/equipo" element={<Equipo />} />
                 <Route path="/dashboard/canales" element={<Canales />} />
+                <Route path="/dashboard/configuracion" element={<ConfiguracionIndex />} />
+                <Route path="/dashboard/configuracion/empaques" element={<ConfiguracionEmpaques />} />
                 <Route path="/dashboard/admin/canales" element={<AdminCanales />} />
               </Route>
             </Route>

@@ -70,3 +70,35 @@ export async function sendAgentMessage(
     text,
   })
 }
+
+export async function sendPaymentStatusMessage(
+  businessId: string,
+  conversationId: string,
+  status: 'approved' | 'rejected',
+  purchaseNumber: string
+) {
+  const { ref, get } = await import('firebase/database')
+  const { db } = await import('@/lib/firebase')
+
+  const convSnap = await get(ref(db, `businessConversations/${businessId}/${conversationId}`))
+  if (!convSnap.exists()) {
+    console.warn('[chatApi] Conversation not found:', conversationId)
+    return
+  }
+
+  const conv = convSnap.val()
+  const phoneNumberId = conv.phoneNumberId
+  const waId = conv.customerPhone
+
+  if (!phoneNumberId || !waId) {
+    console.warn('[chatApi] Missing phoneNumberId or waId for conversation:', conversationId, conv)
+    return
+  }
+
+  const text: Record<string, string> = {
+    approved: `¡Hola! Tu pago ha sido verificado correctamente. Tu pedido ${purchaseNumber} está en preparación. 🎉`,
+    rejected: `¡Hola! Tu pago no pudo ser verificado. Por favor, envía el comprobante nuevamente o contáctanos. 😊`,
+  }
+
+  return sendAgentMessage(businessId, conversationId, phoneNumberId, waId, text[status])
+}

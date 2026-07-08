@@ -1,11 +1,30 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { CheckCircle2, X, Clock, Search, ChevronRight, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import PaymentDetailPanel from '@/components/orders/PaymentDetailPanel'
 import ReassignModal from '@/components/orders/ReassignModal'
-import { mockPaymentOrders, formatCurrency } from '@/data/mockData'
+import { useBusiness } from '@/context/BusinessContext'
+import { useAuth } from '@/context/AuthContext'
+import { subscribePreorders } from '@/lib/db'
+import {
+  approvePreorder,
+  rejectPreorder,
+  assignPreorder,
+  requestPreorderReceipt,
+  seedMockPreorders,
+} from '@/services/preorderService'
+import { obtenerMiembrosDeNegocio, obtenerPerfilesDeUsuarios } from '@/services/businessService'
+import { mapPreorderToPaymentOrder } from '@/utils/preorderMappers'
+import { formatCurrency } from '@/data/mockData'
 import type { PaymentOrder } from '@/types/payments'
+import type { Preorder } from '@/types/preorders'
+
+interface EmployeeOption {
+  id: string
+  name: string
+  email?: string
+}
 
 function formatDateTimeShort(timestamp: number) {
   return new Intl.DateTimeFormat('es-PE', {
@@ -15,19 +34,76 @@ function formatDateTimeShort(timestamp: number) {
 }
 
 export default function PaymentVerification() {
-  const [orders, setOrders] = useState<PaymentOrder[]>(mockPaymentOrders)
+  const { activeBusinessId } = useBusiness()
+  const { firebaseUser } = useAuth()
+
+  const [orders, setOrders] = useState<PaymentOrder[]>([])
   const [selectedOrder, setSelectedOrder] = useState<PaymentOrder | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [toast, setToast] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [employees, setEmployees] = useState<EmployeeOption[]>([])
 
   const [rejectReassignOpen, setRejectReassignOpen] = useState(false)
   const [rejectReassignOrderId, setRejectReassignOrderId] = useState<string | null>(null)
 
-  const showToast = (msg: string) => {
+  const showToast = useCallback((msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 2500)
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!activeBusinessId) return
+
+    const unsub = subscribePreorders(activeBusinessId, (data) => {
+      if (!data) {
+        setOrders([])
+        setLoading(false)
+        return
+      }
+
+      const entries = Object.entries(data) as [string, any][]
+      const pending = entries.filter(([, p]) => p.status === 'pending_verification')
+
+      const mapped: PaymentOrder[] = pending.map(([id, raw]) => {
+        const preorder: Preorder = { id, ...raw }
+        return mapPreorderToPaymentOrder(preorder)
+      })
+
+      setOrders(mapped)
+      setLoading(false)
+    })
+
+    return () => unsub()
+  }, [activeBusinessId])
+
+  useEffect(() => {
+    if (!activeBusinessId) return
+
+    const loadEmployees = async () => {
+      const members = await obtenerMiembrosDeNegocio(activeBusinessId)
+      const activeUids = members.filter((m) => m.active).map((m) => m.uid)
+      if (activeUids.length === 0) return
+
+      const profiles = await obtenerPerfilesDeUsuarios(activeUids)
+      const list: EmployeeOption[] = []
+      for (const uid of activeUids) {
+        const p = profiles[uid]
+        if (p) {
+          list.push({ id: uid, name: p.displayName || 'Sin nombre', email: p.email })
+        }
+      }
+      setEmployees(list)
+    }
+
+    loadEmployees()
+  }, [activeBusinessId])
+
+  useEffect(() => {
+    if (!activeBusinessId) return
+    seedMockPreorders(activeBusinessId)
+  }, [activeBusinessId])
 
   const filteredOrders = orders.filter((order) => {
     if (!searchQuery.trim()) return true
@@ -38,11 +114,17 @@ export default function PaymentVerification() {
     )
   })
 
-  const handleApprove = (id: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== id))
-    setPanelOpen(false)
-    setSelectedOrder(null)
-    showToast('Pago aprobado — Pedido listo para entrega')
+  const handleApprove = async (id: string) => {
+    if (!activeBusinessId) return
+
+    try {
+      const uid = firebaseUser?.uid ?? 'unknown'
+      const name = firebaseUser?.displayName ?? 'Agente'
+      await approvePreorder(activeBusinessId, id, uid, name)
+      showToast('Pago aprobado — Pedido listo para entrega')
+    } catch {
+      showToast('Error al aprobar el pago')
+    }
   }
 
   const handleRejectStart = (id: string) => {
@@ -50,15 +132,22 @@ export default function PaymentVerification() {
     setRejectReassignOpen(true)
   }
 
-  const handleRejectConfirm = (_empId: string, empName: string) => {
-    if (rejectReassignOrderId) {
-      setOrders((prev) => prev.filter((o) => o.id !== rejectReassignOrderId))
+  const handleRejectConfirm = async (_empId: string, empName: string) => {
+    if (!activeBusinessId || !rejectReassignOrderId) return
+
+    try {
+      const uid = firebaseUser?.uid ?? 'unknown'
+      const name = firebaseUser?.displayName ?? 'Agente'
+      await rejectPreorder(activeBusinessId, rejectReassignOrderId, uid, name)
+      showToast(`Pago rechazado — Chat asignado a ${empName}`)
+    } catch {
+      showToast('Error al rechazar el pago')
     }
+
     setRejectReassignOpen(false)
     setRejectReassignOrderId(null)
     setPanelOpen(false)
     setSelectedOrder(null)
-    showToast(`Pago rechazado — Chat asignado a ${empName}`)
   }
 
   const handleRejectCancel = () => {
@@ -66,14 +155,30 @@ export default function PaymentVerification() {
     setRejectReassignOrderId(null)
   }
 
-  const handleReassign = (_id: string, employeeName: string) => {
+  const handleReassign = async (_id: string, employeeName: string) => {
+    if (!activeBusinessId) return
+    try {
+      const uid = firebaseUser?.uid ?? 'unknown'
+      await assignPreorder(activeBusinessId, _id, uid, employeeName)
+      showToast(`Verificación reasignada a ${employeeName}`)
+    } catch {
+      showToast('Error al reasignar')
+    }
     setPanelOpen(false)
     setSelectedOrder(null)
-    showToast(`Verificación reasignada a ${employeeName}`)
   }
 
-  const handleRequestReceipt = () => {
-    showToast('Solicitud de nuevo comprobante enviada al cliente')
+  const handleRequestReceipt = async (orderId?: string) => {
+    const id = orderId || selectedOrder?.id
+    if (!activeBusinessId || !id) return
+    try {
+      await requestPreorderReceipt(activeBusinessId, id)
+      showToast('Solicitud de nuevo comprobante enviada al cliente')
+      setPanelOpen(false)
+      setSelectedOrder(null)
+    } catch {
+      showToast('Error al solicitar nuevo comprobante')
+    }
   }
 
   const openPanel = (order: PaymentOrder) => {
@@ -94,10 +199,12 @@ export default function PaymentVerification() {
               }
             </p>
           </div>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
-            <Clock className="h-3.5 w-3.5 text-amber-600" />
-            {orders.length} pendiente{orders.length !== 1 ? 's' : ''}
-          </span>
+          {!loading && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
+              <Clock className="h-3.5 w-3.5 text-amber-600" />
+              {orders.length} pendiente{orders.length !== 1 ? 's' : ''}
+            </span>
+          )}
         </div>
       </div>
 
@@ -121,7 +228,11 @@ export default function PaymentVerification() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-5">
-        {filteredOrders.length === 0 ? (
+        {loading ? (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-sm text-muted-foreground">Cargando pedidos...</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 py-20">
             {searchQuery ? (
               <>
@@ -154,9 +265,9 @@ export default function PaymentVerification() {
               <PaymentCard
                 key={order.id}
                 order={order}
-                onApprove={handleApprove}
-                onRejectStart={handleRejectStart}
-                onRequestReceipt={handleRequestReceipt}
+                onApprove={() => handleApprove(order.id)}
+                onRejectStart={() => handleRejectStart(order.id)}
+                onRequestReceipt={() => handleRequestReceipt(order.id)}
                 onViewDetails={() => openPanel(order)}
               />
             ))}
@@ -174,16 +285,18 @@ export default function PaymentVerification() {
         open={panelOpen}
         onClose={() => { setPanelOpen(false); setSelectedOrder(null) }}
         order={selectedOrder}
-        onApprove={handleApprove}
-        onRejectStart={handleRejectStart}
+        onApprove={() => selectedOrder && handleApprove(selectedOrder.id)}
+        onRejectStart={() => selectedOrder && handleRejectStart(selectedOrder.id)}
         onReassign={handleReassign}
-        onRequestReceipt={handleRequestReceipt}
+        onRequestReceipt={() => selectedOrder && handleRequestReceipt(selectedOrder.id)}
+        employees={employees}
       />
 
       <ReassignModal
         open={rejectReassignOpen}
         onClose={handleRejectCancel}
         onReassign={handleRejectConfirm}
+        employees={employees}
         currentOrderNumber={orders.find((o) => o.id === rejectReassignOrderId)?.purchaseNumber}
         title="Asignar chat del cliente"
         description="Selecciona a quién se asignará el chat con el cliente para gestionar el comprobante."
@@ -200,8 +313,8 @@ function PaymentCard({
   onViewDetails,
 }: {
   order: PaymentOrder
-  onApprove: (id: string) => void
-  onRejectStart: (id: string) => void
+  onApprove: () => void
+  onRejectStart: () => void
   onRequestReceipt: () => void
   onViewDetails: () => void
 }) {
@@ -231,7 +344,7 @@ function PaymentCard({
         <Button
           size="xs"
           className="flex-1 gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
-          onClick={() => onApprove(order.id)}
+          onClick={onApprove}
         >
           <CheckCircle2 className="h-3 w-3" />
           Aprobar
@@ -240,7 +353,7 @@ function PaymentCard({
           size="xs"
           variant="outline"
           className="flex-1 gap-1 text-destructive"
-          onClick={() => onRejectStart(order.id)}
+          onClick={onRejectStart}
         >
           <X className="h-3 w-3" />
           Rechazar

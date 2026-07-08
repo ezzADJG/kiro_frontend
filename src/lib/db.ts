@@ -49,6 +49,22 @@ export function invitationTokenRef(token: string) {
   return ref(db, `invitationTokens/${token}`)
 }
 
+export function salesRef(businessId: string) {
+  return ref(db, `sales/${businessId}`)
+}
+
+export function saleRef(businessId: string, saleId: string) {
+  return ref(db, `sales/${businessId}/${saleId}`)
+}
+
+export function customersRef(businessId: string) {
+  return ref(db, `customers/${businessId}`)
+}
+
+export function customerRef(businessId: string, customerId: string) {
+  return ref(db, `customers/${businessId}/${customerId}`)
+}
+
 export function subscribeConversations(
   businessId: string,
   callback: (data: Record<string, any> | null) => void
@@ -86,6 +102,42 @@ export function subscribeBusinessPhones(
     orderByChild('business_id'),
     equalTo(businessId)
   )
+  const unsubscribe = onValue(dbRef, (snapshot) => {
+    callback(snapshot.val())
+  })
+  return () => {
+    off(dbRef)
+    unsubscribe()
+  }
+}
+
+export function subscribeSales(
+  businessId: string,
+  callback: (data: Record<string, any> | null) => void
+): Unsubscribe {
+  const dbRef = salesRef(businessId)
+  const unsubscribe = onValue(dbRef, (snapshot) => {
+    callback(snapshot.val())
+  })
+  return () => {
+    off(dbRef)
+    unsubscribe()
+  }
+}
+
+export function preordersRef(businessId: string) {
+  return ref(db, `preorders/${businessId}`)
+}
+
+export function preorderRef(businessId: string, preorderId: string) {
+  return ref(db, `preorders/${businessId}/${preorderId}`)
+}
+
+export function subscribePreorders(
+  businessId: string,
+  callback: (data: Record<string, any> | null) => void
+): Unsubscribe {
+  const dbRef = preordersRef(businessId)
   const unsubscribe = onValue(dbRef, (snapshot) => {
     callback(snapshot.val())
   })

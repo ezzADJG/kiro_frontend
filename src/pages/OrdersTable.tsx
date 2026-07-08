@@ -9,7 +9,12 @@ import PaymentDetailPanel from '@/components/orders/PaymentDetailPanel'
 import DeliveryDetailPanel from '@/components/orders/DeliveryDetailPanel'
 import AssignDriverModal from '@/components/orders/AssignDriverModal'
 import ShalomShippingModal from '@/components/orders/ShalomShippingModal'
-import { mockPaymentOrders, mockDeliveryOrders, formatCurrency, formatTime, paymentToDeliveryOrder } from '@/data/mockData'
+import { useBusiness } from '@/context/BusinessContext'
+import { useAuth } from '@/context/AuthContext'
+import { subscribePreorders } from '@/lib/db'
+import { approvePreorder, rejectPreorder, assignPreorder } from '@/services/preorderService'
+import { mapPreorderToPaymentOrder } from '@/utils/preorderMappers'
+import { mockDeliveryOrders, formatCurrency, formatTime } from '@/data/mockData'
 import {
   PAYMENT_METHOD_LABELS,
   UNIFIED_STATUS_LABELS,
@@ -18,6 +23,7 @@ import {
   SHIPPING_METHOD_LABELS,
 } from '@/types/payments'
 import type { PaymentOrder, DeliveryOrder, UnifiedOrderStatus, ShippingMethod, ShalomOrderPayload, ShalomTracking } from '@/types/payments'
+import type { Preorder } from '@/types/preorders'
 
 interface UnifiedRow {
   id: string
@@ -36,7 +42,9 @@ interface UnifiedRow {
 }
 
 const ALL_STATUSES: UnifiedOrderStatus[] = [
+  'pending_payment',
   'pending_verification',
+  'approved',
   'rejected',
   'received',
   'processing',
@@ -57,7 +65,9 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 ]
 
 export default function OrdersTable() {
-  const [paymentOrders, setPaymentOrders] = useState<PaymentOrder[]>(mockPaymentOrders)
+  const { activeBusinessId } = useBusiness()
+  const { firebaseUser } = useAuth()
+  const [paymentOrders, setPaymentOrders] = useState<PaymentOrder[]>([])
   const [deliveryOrders, setDeliveryOrders] = useState<DeliveryOrder[]>(mockDeliveryOrders)
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null)
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null)
@@ -83,6 +93,27 @@ export default function OrdersTable() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (!activeBusinessId) return
+
+    const unsub = subscribePreorders(activeBusinessId, (data) => {
+      if (!data) {
+        setPaymentOrders([])
+        return
+      }
+
+      const entries = Object.entries(data) as [string, any][]
+      const mapped: PaymentOrder[] = entries.map(([id, raw]) => {
+        const preorder: Preorder = { id, ...raw }
+        return mapPreorderToPaymentOrder(preorder)
+      })
+
+      setPaymentOrders(mapped)
+    })
+
+    return () => unsub()
+  }, [activeBusinessId])
+
   const showToast = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 2500)
@@ -100,7 +131,7 @@ export default function OrdersTable() {
       paymentMethod: PAYMENT_METHOD_LABELS[o.paymentMethod],
       deliveryAddress: o.deliveryAddress,
       displayTime: o.createdAt,
-      status: o.status === 'rejected' ? 'rejected' : 'pending_verification',
+      status: o.status as UnifiedOrderStatus,
       shippingMethod: null,
       shalomTracking: null,
     }))
@@ -197,28 +228,45 @@ export default function OrdersTable() {
     }
   }
 
-  const handleApprove = (orderId: string) => {
-    const order = paymentOrders.find((o) => o.id === orderId)
-    if (!order) return
-    const newDelivery = paymentToDeliveryOrder(order, 'Ana Martínez López')
-    setPaymentOrders((prev) => prev.filter((o) => o.id !== orderId))
-    setDeliveryOrders((prev) => [...prev, newDelivery])
-    setPaymentPanelOpen(false)
-    setSelectedPaymentId(null)
-    showToast('Pago aprobado — Pedido listo para entrega')
+  const handleApprove = async (orderId: string) => {
+    if (!activeBusinessId) return
+    try {
+      const uid = firebaseUser?.uid ?? 'unknown'
+      const name = firebaseUser?.displayName ?? 'Agente'
+      await approvePreorder(activeBusinessId, orderId, uid, name)
+      setPaymentPanelOpen(false)
+      setSelectedPaymentId(null)
+      showToast('Pago aprobado — Pedido listo para entrega')
+    } catch {
+      showToast('Error al aprobar el pago')
+    }
   }
 
-  const handleReject = (orderId: string) => {
-    setPaymentOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: 'rejected' } : o)))
-    setPaymentPanelOpen(false)
-    setSelectedPaymentId(null)
-    showToast('Pago rechazado')
+  const handleReject = async (orderId: string) => {
+    if (!activeBusinessId) return
+    try {
+      const uid = firebaseUser?.uid ?? 'unknown'
+      const name = firebaseUser?.displayName ?? 'Agente'
+      await rejectPreorder(activeBusinessId, orderId, uid, name)
+      setPaymentPanelOpen(false)
+      setSelectedPaymentId(null)
+      showToast('Pago rechazado')
+    } catch {
+      showToast('Error al rechazar el pago')
+    }
   }
 
-  const handleReassign = (_orderId: string, employeeName: string) => {
+  const handleReassign = async (orderId: string, employeeName: string) => {
+    if (!activeBusinessId) return
+    try {
+      const uid = firebaseUser?.uid ?? 'unknown'
+      await assignPreorder(activeBusinessId, orderId, uid, employeeName)
+      showToast(`Verificación reasignada a ${employeeName}`)
+    } catch {
+      showToast('Error al reasignar')
+    }
     setPaymentPanelOpen(false)
     setSelectedPaymentId(null)
-    showToast(`Verificación reasignada a ${employeeName}`)
   }
 
   const handleAssignDriver = (orderId: string, driverName: string) => {

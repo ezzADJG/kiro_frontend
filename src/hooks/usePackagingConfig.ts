@@ -9,14 +9,17 @@ import { isFlexibleType } from "@/types/packaging"
 
 const STORAGE_KEY_PACKAGINGS = "kiro-packagings"
 const STORAGE_KEY_EQUIVALENCES = "kiro-equivalences"
+const STORAGE_KEY_VERSION = "kiro-packaging-version"
+const CURRENT_VERSION = 2
 
 export const DEFAULT_SHALOM_CATEGORIES: OperatorPackageCategory[] = [
-  { id: "shalom-xs", operatorId: "shalom", categoryName: "Caja XS", description: "Ultra pequeña", maxLengthCm: 15, maxWidthCm: 10, maxHeightCm: 5, maxWeightKg: 0.5 },
-  { id: "shalom-s", operatorId: "shalom", categoryName: "Caja S", description: "Pequeña", maxLengthCm: 25, maxWidthCm: 20, maxHeightCm: 15, maxWeightKg: 2 },
-  { id: "shalom-m", operatorId: "shalom", categoryName: "Caja M", description: "Mediana", maxLengthCm: 35, maxWidthCm: 25, maxHeightCm: 20, maxWeightKg: 5 },
-  { id: "shalom-l", operatorId: "shalom", categoryName: "Caja L", description: "Grande", maxLengthCm: 45, maxWidthCm: 35, maxHeightCm: 25, maxWeightKg: 10 },
-  { id: "shalom-xl", operatorId: "shalom", categoryName: "Caja XL", description: "Extra grande", maxLengthCm: 60, maxWidthCm: 40, maxHeightCm: 30, maxWeightKg: 20 },
-  { id: "shalom-bolsa", operatorId: "shalom", categoryName: "Bolsa Courier", description: "Bolsa flexible", maxLengthCm: null, maxWidthCm: null, maxHeightCm: null, maxWeightKg: 2 },
+  { id: "shalom-xxs", operatorId: "shalom", categoryName: "XXS", description: "Extra extra pequeña", maxLengthCm: 10, maxWidthCm: 8, maxHeightCm: 4, maxWeightKg: 0.3 },
+  { id: "shalom-xs", operatorId: "shalom", categoryName: "XS", description: "Extra pequeña", maxLengthCm: 15, maxWidthCm: 10, maxHeightCm: 5, maxWeightKg: 0.5 },
+  { id: "shalom-s", operatorId: "shalom", categoryName: "S", description: "Pequeña", maxLengthCm: 25, maxWidthCm: 20, maxHeightCm: 15, maxWeightKg: 2 },
+  { id: "shalom-m", operatorId: "shalom", categoryName: "M", description: "Mediana", maxLengthCm: 35, maxWidthCm: 25, maxHeightCm: 20, maxWeightKg: 5 },
+  { id: "shalom-l", operatorId: "shalom", categoryName: "L", description: "Grande", maxLengthCm: 45, maxWidthCm: 35, maxHeightCm: 25, maxWeightKg: 10 },
+  { id: "shalom-sobre", operatorId: "shalom", categoryName: "Sobre", description: "Sobre", maxLengthCm: null, maxWidthCm: null, maxHeightCm: null, maxWeightKg: 2 },
+  { id: "shalom-otra", operatorId: "shalom", categoryName: "Otra medida", description: "Medida personalizada", maxLengthCm: null, maxWidthCm: null, maxHeightCm: null, maxWeightKg: null },
 ]
 
 function loadFromStorage<T>(key: string, fallback: T): T {
@@ -25,6 +28,15 @@ function loadFromStorage<T>(key: string, fallback: T): T {
     return raw ? JSON.parse(raw) : fallback
   } catch {
     return fallback
+  }
+}
+
+function clearStorageIfOldVersion() {
+  const storedVersion = loadFromStorage<number>(STORAGE_KEY_VERSION, 0)
+  if (storedVersion !== CURRENT_VERSION) {
+    localStorage.removeItem(STORAGE_KEY_PACKAGINGS)
+    localStorage.removeItem(STORAGE_KEY_EQUIVALENCES)
+    localStorage.setItem(STORAGE_KEY_VERSION, JSON.stringify(CURRENT_VERSION))
   }
 }
 
@@ -71,12 +83,14 @@ export function validatePackagingForm(data: PackagingFormData): PackagingFormErr
 }
 
 export function usePackagingConfig() {
-  const [packagings, setPackagings] = useState<Packaging[]>(() =>
-    loadFromStorage(STORAGE_KEY_PACKAGINGS, [])
-  )
-  const [equivalences, setEquivalences] = useState<PackagingEquivalence[]>(() =>
-    loadFromStorage(STORAGE_KEY_EQUIVALENCES, [])
-  )
+  const [packagings, setPackagings] = useState<Packaging[]>(() => {
+    clearStorageIfOldVersion()
+    return loadFromStorage<Packaging[]>(STORAGE_KEY_PACKAGINGS, [])
+  })
+  const [equivalences, setEquivalences] = useState<PackagingEquivalence[]>(() => {
+    clearStorageIfOldVersion()
+    return loadFromStorage<PackagingEquivalence[]>(STORAGE_KEY_EQUIVALENCES, [])
+  })
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {

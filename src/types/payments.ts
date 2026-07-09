@@ -7,7 +7,7 @@ export interface OrderProduct {
 
 export type PaymentMethod = 'yape' | 'plin' | 'transferencia' | 'efectivo' | 'tarjeta'
 
-export type PaymentVerificationStatus = 'pending_verification' | 'approved' | 'rejected'
+export type PaymentVerificationStatus = 'pending_payment' | 'pending_verification' | 'approved' | 'rejected'
 
 export type DeliveryStatus = 'received' | 'processing' | 'ready' | 'in_transit' | 'delivered' | 'confirmed'
 
@@ -29,6 +29,7 @@ export interface PaymentOrder {
   paymentBank: string
   createdAt: number
   status: PaymentVerificationStatus
+  conversationId?: string
 }
 
 export interface ShalomPerson {
@@ -144,6 +145,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 }
 
 export const PAYMENT_VERIFICATION_STATUS_LABELS: Record<PaymentVerificationStatus, string> = {
+  pending_payment: 'Pago Pendiente',
   pending_verification: 'Pago Pendiente de Verificación',
   approved: 'Pago Aprobado',
   rejected: 'Pago Rechazado',
@@ -182,22 +184,28 @@ export const SHIPPING_METHOD_LABELS: Record<ShippingMethod, string> = {
   recojo_en_tienda: 'Recojo en Tienda',
 }
 
-export type UnifiedOrderStatus = DeliveryStatus | 'pending_verification' | 'rejected'
+export type UnifiedOrderStatus = DeliveryStatus | 'pending_payment' | 'pending_verification' | 'approved' | 'rejected'
 
 export const UNIFIED_STATUS_LABELS: Record<UnifiedOrderStatus, string> = {
-  pending_verification: 'Pago Pendiente',
+  pending_payment: 'Pago Pendiente',
+  pending_verification: 'Pendiente de Verificación',
+  approved: 'Pago Aprobado',
   rejected: 'Rechazado',
   ...DELIVERY_STATUS_LABELS,
 }
 
 export const UNIFIED_STATUS_DOT: Record<UnifiedOrderStatus, string> = {
+  pending_payment: 'bg-gray-400',
   pending_verification: 'bg-amber-500',
+  approved: 'bg-emerald-500',
   rejected: 'bg-red-500',
   ...DELIVERY_STATUS_DOT,
 }
 
 export const UNIFIED_STATUS_TEXT: Record<UnifiedOrderStatus, string> = {
+  pending_payment: 'text-gray-500',
   pending_verification: 'text-amber-700',
+  approved: 'text-emerald-600',
   rejected: 'text-red-600',
   ...DELIVERY_STATUS_TEXT,
 }

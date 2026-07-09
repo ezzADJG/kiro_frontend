@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Home, Store, Package, MessageSquareMore, Cable, Users, Receipt, Truck, List, LogOut } from 'lucide-react'
+import { Home, Store, Package, MessageSquareMore, Cable, Users, Receipt, Truck, List, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { to: '/dashboard/ordenes', icon: List, label: 'Órdenes' },
   { to: '/dashboard/verificacion-pagos', icon: Receipt, label: 'Verificación' },
   { to: '/dashboard/entregas', icon: Truck, label: 'Entregas' },
+  { to: '/dashboard/configuracion', icon: Settings, label: 'Configuración' },
 ] as const
 
 export default function Sidebar() {

@@ -1,12 +1,18 @@
 import { useState } from 'react'
 import { X, User, Check, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { mockEmployees } from '@/data/mockData'
+
+interface EmployeeOption {
+  id: string
+  name: string
+  email?: string
+}
 
 interface ReassignModalProps {
   open: boolean
   onClose: () => void
   onReassign: (employeeId: string, employeeName: string) => void
+  employees?: EmployeeOption[]
   currentOrderNumber?: string
   title?: string
   description?: string
@@ -16,6 +22,7 @@ export default function ReassignModal({
   open,
   onClose,
   onReassign,
+  employees = [],
   currentOrderNumber,
   title = 'Reasignar verificación',
   description,
@@ -25,7 +32,7 @@ export default function ReassignModal({
   if (!open) return null
 
   const handleReassign = () => {
-    const emp = mockEmployees.find((e) => e.id === selectedId)
+    const emp = employees.find((e) => e.id === selectedId)
     if (emp) {
       onReassign(emp.id, emp.name)
       setSelectedId(null)
@@ -58,7 +65,9 @@ export default function ReassignModal({
               Seleccionar persona
             </p>
             <div className="space-y-1.5">
-              {mockEmployees.map((emp) => (
+              {employees.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">No hay empleados disponibles</p>
+              ) : employees.map((emp) => (
                 <button
                   key={emp.id}
                   onClick={() => setSelectedId(emp.id)}

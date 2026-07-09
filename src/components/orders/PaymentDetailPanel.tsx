@@ -7,6 +7,12 @@ import type { PaymentOrder } from '@/types/payments'
 import { PAYMENT_METHOD_LABELS, PAYMENT_VERIFICATION_STATUS_LABELS } from '@/types/payments'
 import { formatCurrency, formatDate } from '@/data/mockData'
 
+interface EmployeeOption {
+  id: string
+  name: string
+  email?: string
+}
+
 interface PaymentDetailPanelProps {
   open: boolean
   onClose: () => void
@@ -16,6 +22,7 @@ interface PaymentDetailPanelProps {
   onRejectStart?: (orderId: string) => void
   onReassign: (orderId: string, employeeName: string) => void
   onRequestReceipt?: () => void
+  employees?: EmployeeOption[]
 }
 
 function InfoRow({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon?: React.ElementType }) {
@@ -43,6 +50,7 @@ export default function PaymentDetailPanel({
   onRejectStart,
   onReassign,
   onRequestReceipt,
+  employees = [],
 }: PaymentDetailPanelProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [reassignOpen, setReassignOpen] = useState(false)
@@ -202,6 +210,7 @@ export default function PaymentDetailPanel({
           setReassignOpen(false)
           onClose()
         }}
+        employees={employees}
         currentOrderNumber={order.purchaseNumber}
       />
     </>

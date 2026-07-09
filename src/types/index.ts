@@ -133,3 +133,17 @@ export interface ProductItem {
   description?: string
   businessType: BusinessType
 }
+
+export interface BusinessProduct {
+  activo: boolean
+  createdAt: number
+  updatedAt: number
+  [key: string]: string | number | boolean | undefined
+}
+
+export interface BusinessService {
+  activo: boolean
+  createdAt: number
+  updatedAt: number
+  [key: string]: string | number | boolean | undefined
+}

@@ -179,6 +179,10 @@ export function serviceRef(businessId: string, serviceId: string) {
   return ref(db, `services/${businessId}/${serviceId}`)
 }
 
+export function shippingConfigRef(businessId: string) {
+  return ref(db, `conf_envios/${businessId}/shippingConfig`)
+}
+
 export function subscribeProducts(
   businessId: string,
   callback: (data: Record<string, any> | null) => void

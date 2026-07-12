@@ -56,9 +56,3 @@ export interface OperatorPackageCategory {
   maxWeightKg: number | null
 }
 
-export interface PackagingEquivalence {
-  id: string
-  packagingId: string
-  operatorCategoryId: string
-  notes: string | null
-}

@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext'
 import { ref, onValue } from 'firebase/database'
 import { db } from '@/lib/firebase'
 import type { UserBusinessMembership } from '@/types/business'
+import { seedMockOrders } from '@/services/orderService'
 
 interface BusinessContextValue {
   activeBusinessId: string | null
@@ -71,6 +72,17 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe()
   }, [firebaseUser, loadingAuth])
+
+  useEffect(() => {
+    if (!activeBusinessId || loadingBusiness) return
+    const seedKey = `kiro_orders_seeded_${activeBusinessId}`
+    if (localStorage.getItem(seedKey)) return
+    seedMockOrders(activeBusinessId)
+      .then(() => {
+        localStorage.setItem(seedKey, 'true')
+      })
+      .catch(() => {})
+  }, [activeBusinessId, loadingBusiness])
 
   function setActiveBusinessId(businessId: string | null) {
     if (businessId) {

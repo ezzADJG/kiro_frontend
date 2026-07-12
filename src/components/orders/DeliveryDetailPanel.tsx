@@ -284,8 +284,8 @@ export default function DeliveryDetailPanel({
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
                 {order.deliveryStatus === 'in_transit' ? <Truck className="h-3 w-3 text-orange-600" /> :
                  order.deliveryStatus === 'delivered' || order.deliveryStatus === 'confirmed' ? <CheckCircle2 className="h-3 w-3 text-emerald-600" /> :
-                 <Clock className="h-3 w-3 text-blue-600" />}
-                {DELIVERY_STATUS_LABELS[order.deliveryStatus]}
+                 order.deliveryStatus ? <Clock className="h-3 w-3 text-blue-600" /> : null}
+                {order.deliveryStatus ? DELIVERY_STATUS_LABELS[order.deliveryStatus] : '—'}
               </span>
             </div>
             <Divider />

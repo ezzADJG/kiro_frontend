@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { ref, onValue } from 'firebase/database'
+import { db } from '@/lib/firebase'
 import {
   MapPin, Truck, CheckCircle2, Package, ChevronRight, ListRestart,
   Search, UserCheck, Clock, Store, Hash, ArrowRight,
@@ -9,13 +11,22 @@ import { Input } from '@/components/ui/input'
 import DeliveryDetailPanel from '@/components/orders/DeliveryDetailPanel'
 import AssignDriverModal from '@/components/orders/AssignDriverModal'
 import ShalomShippingModal from '@/components/orders/ShalomShippingModal'
-import { mockDeliveryOrders } from '@/data/mockData'
+import { useBusiness } from '@/context/BusinessContext'
+import { subscribeOrders } from '@/lib/db'
+import {
+  updateOrderDeliveryStatus,
+  updateOrderShipping,
+} from '@/services/orderService'
+import { saveShippingData } from '@/services/shippingDataService'
+import { mapOrderToDeliveryOrder } from '@/utils/orderMappers'
+import { migrateOrders } from '@/services/migrationService'
 import {
   DELIVERY_STATUS_LABELS, DELIVERY_STATUS_DOT, DELIVERY_STATUS_TEXT,
   SHIPPING_METHOD_LABELS,
 } from '@/types/payments'
 import { formatCurrency, formatTime, formatDate } from '@/data/mockData'
 import type { DeliveryOrder, ShippingMethod, ShalomOrderPayload, ShalomTracking } from '@/types/payments'
+import type { Order } from '@/types/order'
 
 type SortKey = 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc' | 'shipping_asc'
 
@@ -28,7 +39,8 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 ]
 
 export default function DeliveryDashboard() {
-  const [orders, setOrders] = useState<DeliveryOrder[]>(mockDeliveryOrders)
+  const { activeBusinessId } = useBusiness()
+  const [orders, setOrders] = useState<DeliveryOrder[]>([])
   const [selectedOrder, setSelectedOrder] = useState<DeliveryOrder | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [assignModalOrderId, setAssignModalOrderId] = useState<string | null>(null)
@@ -42,6 +54,31 @@ export default function DeliveryDashboard() {
     setToast(msg)
     setTimeout(() => setToast(null), 2500)
   }
+
+  useEffect(() => {
+    if (!activeBusinessId) return
+
+    migrateOrders(activeBusinessId).then(() => {
+      const unsub = subscribeOrders(activeBusinessId, (data) => {
+        if (!data) {
+          setOrders([])
+          return
+        }
+
+        const entries = Object.entries(data) as [string, any][]
+        const approved = entries.filter(([, o]) => o.status === 'approved')
+
+        const mapped: DeliveryOrder[] = approved.map(([id, raw]) => {
+          const order: Order = { id, ...raw }
+          return mapOrderToDeliveryOrder(order)
+        })
+
+        setOrders(mapped)
+      })
+
+      return () => unsub()
+    })
+  }, [activeBusinessId])
 
   const filteredOrders = orders
     .filter((order) => {
@@ -68,38 +105,29 @@ export default function DeliveryDashboard() {
       }
     })
 
-  const handleSetShippingMethod = (orderId: string, method: ShippingMethod) => {
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, shippingMethod: method } : o)))
+  const handleSetShippingMethod = async (orderId: string, method: ShippingMethod) => {
+    if (!activeBusinessId) return
+    await updateOrderShipping(activeBusinessId, orderId, method)
   }
 
-  const handleAssignDriver = (orderId: string, driverName: string) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? { ...o, assignedDriver: driverName, shippingMethod: 'motorizado' as const }
-          : o,
-      ),
-    )
+  const handleAssignDriver = async (orderId: string, driverName: string) => {
+    if (!activeBusinessId) return
+    await updateOrderShipping(activeBusinessId, orderId, 'motorizado', driverName)
     setAssignModalOrderId(null)
     showToast(`Conductor asignado: ${driverName}`)
   }
 
-  const handleShalomGenerate = (orderId: string, payload: ShalomOrderPayload, tracking: ShalomTracking) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? { ...o, shippingMethod: 'courier' as const, shalomData: payload, shalomTracking: tracking }
-          : o,
-      ),
-    )
+  const handleShalomGenerate = async (orderId: string, payload: ShalomOrderPayload, tracking: ShalomTracking) => {
+    if (!activeBusinessId) return
+    await updateOrderShipping(activeBusinessId, orderId, 'courier')
+    await saveShippingData(activeBusinessId, orderId, { type: 'courier', tracking }, payload)
     setShalomModalOrderId(null)
     showToast(`Guía Shalom generada: ${tracking.guia}`)
   }
 
-  const handleStatusTransition = (orderId: string, nextStatus: DeliveryOrder['deliveryStatus']) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, deliveryStatus: nextStatus } : o)),
-    )
+  const handleStatusTransition = async (orderId: string, nextStatus: DeliveryOrder['deliveryStatus']) => {
+    if (!activeBusinessId) return
+    await updateOrderDeliveryStatus(activeBusinessId, orderId, nextStatus)
     setPanelOpen(false)
     setSelectedOrder(null)
     const labels: Record<string, string> = {
@@ -347,9 +375,9 @@ function DeliveryCard({
             </span>
           </div>
         </div>
-        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${DELIVERY_STATUS_TEXT[order.deliveryStatus]} ${DELIVERY_STATUS_DOT[order.deliveryStatus].replace('bg-', 'bg-').replace('500', '100')} bg-opacity-20`}>
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${DELIVERY_STATUS_DOT[order.deliveryStatus]}`} />
-          {DELIVERY_STATUS_LABELS[order.deliveryStatus]}
+        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${order.deliveryStatus ? DELIVERY_STATUS_TEXT[order.deliveryStatus] : 'text-gray-500'} ${order.deliveryStatus ? DELIVERY_STATUS_DOT[order.deliveryStatus].replace('bg-', 'bg-').replace('500', '100') : 'bg-gray-100'} bg-opacity-20`}>
+          <span className={`inline-block h-1.5 w-1.5 rounded-full ${order.deliveryStatus ? DELIVERY_STATUS_DOT[order.deliveryStatus] : 'bg-gray-400'}`} />
+          {order.deliveryStatus ? DELIVERY_STATUS_LABELS[order.deliveryStatus] : 'Sin estado'}
         </span>
       </div>
 

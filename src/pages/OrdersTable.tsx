@@ -19,14 +19,22 @@ import ShalomShippingModal from '@/components/orders/ShalomShippingModal'
 import PaymentBadge from '@/components/orders/PaymentBadge'
 import { useBusiness } from '@/context/BusinessContext'
 import { useAuth } from '@/context/AuthContext'
-import { subscribePreorders } from '@/lib/db'
-import { approvePreorder, rejectPreorder, assignPreorder } from '@/services/preorderService'
-import { mapPreorderToPaymentOrder } from '@/utils/preorderMappers'
-import { mockDeliveryOrders, formatCurrency } from '@/data/mockData'
+import { subscribeOrders } from '@/lib/db'
+import {
+  approveOrder,
+  rejectOrder,
+  assignOrder,
+  updateOrderDeliveryStatus,
+  updateOrderShipping,
+} from '@/services/orderService'
+import { saveShippingData } from '@/services/shippingDataService'
+import { mapOrderToPaymentOrder, mapOrderToDeliveryOrder } from '@/utils/orderMappers'
+import { migrateOrders } from '@/services/migrationService'
 import { toast } from '@/hooks/use-toast'
 import { SHIPPING_METHOD_LABELS } from '@/types/payments'
+import { formatCurrency } from '@/data/mockData'
 import type { PaymentOrder, DeliveryOrder, ShippingMethod, PaymentVerificationStatus, UnifiedOrderStatus, ShalomOrderPayload, ShalomTracking } from '@/types/payments'
-import type { Preorder } from '@/types/preorders'
+import type { Order } from '@/types/order'
 
 interface UnifiedRow {
   id: string
@@ -39,14 +47,14 @@ interface UnifiedRow {
   totalAmount: number
   currency: string
   displayTime: number
-  status: UnifiedOrderStatus
+  status: UnifiedOrderStatus | null
+  paymentStatus: PaymentVerificationStatus
   shippingMethod: ShippingMethod | null
 }
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Todos los estados' },
-  { value: 'pending_payment', label: 'Pendiente de pago' },
-  { value: 'pending_verification', label: 'Pendiente de verificación' },
+  { value: 'pending_review', label: 'Pendiente de revisión' },
   { value: 'approved', label: 'Aprobado' },
   { value: 'rejected', label: 'Rechazado' },
   { value: 'received', label: 'Recibido' },
@@ -72,7 +80,7 @@ const SHIPPING_FILTER_OPTIONS = [
   { value: 'recojo_en_tienda', label: 'Recojo en tienda' },
 ]
 
-const PENDING_STATUSES: UnifiedOrderStatus[] = ['pending_payment', 'pending_verification']
+const PENDING_STATUSES: UnifiedOrderStatus[] = ['pending_review']
 
 function formatTableDate(ts: number) {
   return new Intl.DateTimeFormat('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ts))
@@ -118,7 +126,7 @@ export default function OrdersTable() {
   const { activeBusinessId } = useBusiness()
   const { firebaseUser } = useAuth()
   const [paymentOrders, setPaymentOrders] = useState<PaymentOrder[]>([])
-  const [deliveryOrders, setDeliveryOrders] = useState<DeliveryOrder[]>(mockDeliveryOrders)
+  const [deliveryOrders, setDeliveryOrders] = useState<DeliveryOrder[]>([])
   const [loading, setLoading] = useState(true)
 
   const [activeTab, setActiveTab] = useState<'new' | 'all'>('new')
@@ -137,23 +145,37 @@ export default function OrdersTable() {
   useEffect(() => {
     if (!activeBusinessId) return
 
-    const unsub = subscribePreorders(activeBusinessId, (data) => {
-      setLoading(false)
-      if (!data) {
-        setPaymentOrders([])
-        return
-      }
+    migrateOrders(activeBusinessId).then(() => {
+      const unsub = subscribeOrders(activeBusinessId, (data) => {
+        setLoading(false)
+        if (!data) {
+          setPaymentOrders([])
+          setDeliveryOrders([])
+          return
+        }
 
-      const entries = Object.entries(data) as [string, any][]
-      const mapped: PaymentOrder[] = entries.map(([id, raw]) => {
-        const preorder: Preorder = { id, ...raw }
-        return mapPreorderToPaymentOrder(preorder)
+        const entries = Object.entries(data) as [string, any][]
+
+        const payments: PaymentOrder[] = []
+        const deliveries: DeliveryOrder[] = []
+
+        for (const [id, raw] of entries) {
+          const order: Order = { id, ...raw }
+          if (order.status === 'pending_review' || order.status === 'rejected') {
+            payments.push(mapOrderToPaymentOrder(order))
+          }
+          if (order.status === 'approved') {
+            payments.push(mapOrderToPaymentOrder(order))
+            deliveries.push(mapOrderToDeliveryOrder(order))
+          }
+        }
+
+        setPaymentOrders(payments)
+        setDeliveryOrders(deliveries)
       })
 
-      setPaymentOrders(mapped)
+      return () => unsub()
     })
-
-    return () => unsub()
   }, [activeBusinessId])
 
   useEffect(() => {
@@ -181,6 +203,7 @@ export default function OrdersTable() {
       currency: o.currency,
       displayTime: o.createdAt,
       status: o.status as UnifiedOrderStatus,
+      paymentStatus: o.status,
       shippingMethod: null,
     }))
     const deliveries: UnifiedRow[] = deliveryOrders.map((o) => ({
@@ -194,7 +217,8 @@ export default function OrdersTable() {
       totalAmount: o.totalAmount,
       currency: o.currency,
       displayTime: o.approvedAt,
-      status: o.deliveryStatus,
+      status: o.deliveryStatus ?? null,
+      paymentStatus: 'approved' as PaymentVerificationStatus,
       shippingMethod: o.shippingMethod,
     }))
     return [...payments, ...deliveries]
@@ -224,9 +248,9 @@ export default function OrdersTable() {
 
     if (paymentFilter !== 'all') {
       if (paymentFilter === 'pending') {
-        rows = rows.filter((r) => r.status === 'pending_payment' || r.status === 'pending_verification')
+        rows = rows.filter((r) => r.paymentStatus === 'pending_review')
       } else {
-        rows = rows.filter((r) => r.status === paymentFilter)
+        rows = rows.filter((r) => r.paymentStatus === paymentFilter)
       }
     }
 
@@ -285,7 +309,7 @@ export default function OrdersTable() {
     try {
       const uid = firebaseUser?.uid ?? 'unknown'
       const name = firebaseUser?.displayName ?? 'Agente'
-      await approvePreorder(activeBusinessId, orderId, uid, name)
+      await approveOrder(activeBusinessId, orderId, uid, name)
       toast({ title: 'Pago aprobado', description: 'El pedido está listo para entrega', variant: 'success' })
     } catch {
       toast({ title: 'Error', description: 'No se pudo aprobar el pago', variant: 'error' })
@@ -297,7 +321,7 @@ export default function OrdersTable() {
     try {
       const uid = firebaseUser?.uid ?? 'unknown'
       const name = firebaseUser?.displayName ?? 'Agente'
-      await rejectPreorder(activeBusinessId, orderId, uid, name)
+      await rejectOrder(activeBusinessId, orderId, uid, name)
       toast({ title: 'Pago rechazado', variant: 'info' })
     } catch {
       toast({ title: 'Error', description: 'No se pudo rechazar el pago', variant: 'error' })
@@ -308,46 +332,37 @@ export default function OrdersTable() {
     if (!activeBusinessId) return
     try {
       const uid = firebaseUser?.uid ?? 'unknown'
-      await assignPreorder(activeBusinessId, orderId, uid, employeeName)
+      await assignOrder(activeBusinessId, orderId, uid, employeeName)
       toast({ title: 'Verificación reasignada', description: `Reasignado a ${employeeName}`, variant: 'success' })
     } catch {
       toast({ title: 'Error', description: 'No se pudo reasignar', variant: 'error' })
     }
   }
 
-  const handleAssignDriver = (orderId: string, driverName: string) => {
-    setDeliveryOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? { ...o, assignedDriver: driverName, shippingMethod: 'motorizado' as const }
-          : o,
-      ),
-    )
+  const handleAssignDriver = async (orderId: string, driverName: string) => {
+    if (!activeBusinessId) return
+    await updateOrderShipping(activeBusinessId, orderId, 'motorizado', driverName)
     setAssignModalOrderId(null)
     toast({ title: 'Conductor asignado', description: driverName, variant: 'success' })
   }
 
-  const handleSetShippingMethod = (orderId: string, method: ShippingMethod) => {
-    setDeliveryOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, shippingMethod: method } : o)))
+  const handleSetShippingMethod = async (orderId: string, method: ShippingMethod) => {
+    if (!activeBusinessId) return
+    await updateOrderShipping(activeBusinessId, orderId, method)
     toast({ title: 'Método de envío actualizado', description: SHIPPING_METHOD_LABELS[method], variant: 'success' })
   }
 
-  const handleShalomGenerate = (orderId: string, payload: ShalomOrderPayload, tracking: ShalomTracking) => {
-    setDeliveryOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? { ...o, shippingMethod: 'courier' as const, shalomData: payload, shalomTracking: tracking }
-          : o,
-      ),
-    )
+  const handleShalomGenerate = async (orderId: string, payload: ShalomOrderPayload, tracking: ShalomTracking) => {
+    if (!activeBusinessId) return
+    await updateOrderShipping(activeBusinessId, orderId, 'courier')
+    await saveShippingData(activeBusinessId, orderId, { type: 'courier', tracking }, payload)
     setShalomModalOrderId(null)
     toast({ title: 'Guía Shalom generada', description: tracking.guia, variant: 'success' })
   }
 
-  const handleStatusTransition = (orderId: string, nextStatus: DeliveryOrder['deliveryStatus']) => {
-    setDeliveryOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, deliveryStatus: nextStatus } : o)),
-    )
+  const handleStatusTransition = async (orderId: string, nextStatus: DeliveryOrder['deliveryStatus']) => {
+    if (!activeBusinessId) return
+    await updateOrderDeliveryStatus(activeBusinessId, orderId, nextStatus)
     const labels: Record<string, string> = {
       processing: 'Preparación iniciada',
       ready: 'Pedido listo para entrega',
@@ -525,7 +540,7 @@ export default function OrdersTable() {
             <tbody>
               {filteredRows.map((row) => (
                 <tr
-                  key={row.id}
+                  key={`${row.type}-${row.id}`}
                   className={`cursor-pointer border-b border-border transition-colors hover:bg-muted/50 ${
                     selectedRowId === row.id ? 'bg-muted/30' : ''
                   }`}
@@ -575,13 +590,7 @@ export default function OrdersTable() {
                   </td>
 
                   <td className="whitespace-nowrap px-4 py-3">
-                    {row.type === 'payment' ? (
-                      <PaymentBadge status={row.status as PaymentVerificationStatus} />
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                        Pagado
-                      </span>
-                    )}
+                    <PaymentBadge status={row.paymentStatus} />
                   </td>
 
                   <td className="whitespace-nowrap px-4 py-3">
@@ -598,7 +607,7 @@ export default function OrdersTable() {
                   </td>
 
                   <td className="whitespace-nowrap px-4 py-3">
-                    {row.type === 'payment' && row.status === 'pending_verification' && (
+                    {row.type === 'payment' && row.status === 'pending_review' && (
                       <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <Button
                           size="xs"
@@ -660,6 +669,7 @@ export default function OrdersTable() {
         open={panelOpen}
         onClose={closePanel}
         order={selectedOrder}
+        businessId={activeBusinessId ?? ''}
         onApprovePayment={handleApprove}
         onRejectPayment={handleReject}
         onReassignPayment={handleReassign}

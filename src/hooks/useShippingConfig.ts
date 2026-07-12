@@ -21,6 +21,8 @@ export interface ShippingFormState {
   remitente: RemitenteData
   telefono: string
   agenciaSeleccionada: AgenciaSeleccionada | null
+  precioLimaCallao: string
+  precioProvincias: string
 }
 
 export function useShippingConfig(businessId: string | null) {
@@ -62,18 +64,27 @@ export function useShippingConfig(businessId: string | null) {
             telefono: configExistente.shalom.telefono,
             agenciaSeleccionada:
               configExistente.shalom.agenciaSeleccionada,
+            precioLimaCallao: configExistente.shalom.precioLimaCallao != null ? String(configExistente.shalom.precioLimaCallao) : "",
+            precioProvincias: configExistente.shalom.precioProvincias != null ? String(configExistente.shalom.precioProvincias) : "",
           })
         } else {
           setShalomForm({
             remitente,
             telefono: negocio.phone,
             agenciaSeleccionada: null,
+            precioLimaCallao: "",
+            precioProvincias: "",
           })
         }
 
-        setOlvaForm(
-          configExistente?.olva ?? mapearOlvaDesdeBusiness(negocio)
-        )
+        const olvaBase = configExistente?.olva ?? mapearOlvaDesdeBusiness(negocio)
+        setOlvaForm({
+          dni: olvaBase.dni,
+          correo: olvaBase.correo,
+          origen: olvaBase.origen,
+          precioLimaCallao: olvaBase.precioLimaCallao != null ? String(olvaBase.precioLimaCallao) : "",
+          precioProvincias: olvaBase.precioProvincias != null ? String(olvaBase.precioProvincias) : "",
+        })
       }
 
       setCargando(false)
@@ -113,10 +124,17 @@ export function useShippingConfig(businessId: string | null) {
   const actualizarOlva = useCallback(
     (campo: string, valor: string) => {
       setOlvaForm((prev) =>
-        prev && (campo === "dni" || campo === "correo" || campo === "origen")
+        prev && (campo === "dni" || campo === "correo" || campo === "origen" || campo === "precioLimaCallao" || campo === "precioProvincias")
           ? { ...prev, [campo]: valor }
           : prev
       )
+    },
+    []
+  )
+
+  const actualizarShalomPrecio = useCallback(
+    (campo: "precioLimaCallao" | "precioProvincias", valor: string) => {
+      setShalomForm((prev) => (prev ? { ...prev, [campo]: valor } : null))
     },
     []
   )
@@ -131,8 +149,16 @@ export function useShippingConfig(businessId: string | null) {
           remitente: shalomForm.remitente,
           telefono: shalomForm.telefono,
           agenciaSeleccionada: shalomForm.agenciaSeleccionada,
+          precioLimaCallao: shalomForm.precioLimaCallao ? parseFloat(shalomForm.precioLimaCallao) : null,
+          precioProvincias: shalomForm.precioProvincias ? parseFloat(shalomForm.precioProvincias) : null,
         } satisfies ConfigShalom,
-        olva: olvaForm satisfies ConfigOlva,
+        olva: {
+          dni: olvaForm.dni,
+          correo: olvaForm.correo,
+          origen: olvaForm.origen,
+          precioLimaCallao: olvaForm.precioLimaCallao ? parseFloat(olvaForm.precioLimaCallao) : null,
+          precioProvincias: olvaForm.precioProvincias ? parseFloat(olvaForm.precioProvincias) : null,
+        } satisfies ConfigOlva,
       }
       await saveShippingConfig(businessId, data)
       return true
@@ -167,6 +193,7 @@ export function useShippingConfig(businessId: string | null) {
     actualizarTelefono,
     seleccionarAgencia,
     actualizarOlva,
+    actualizarShalomPrecio,
     guardar,
   }
 }

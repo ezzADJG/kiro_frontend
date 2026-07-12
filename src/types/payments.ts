@@ -7,7 +7,7 @@ export interface OrderProduct {
 
 export type PaymentMethod = 'yape' | 'plin' | 'transferencia' | 'efectivo' | 'tarjeta'
 
-export type PaymentVerificationStatus = 'pending_payment' | 'pending_verification' | 'approved' | 'rejected'
+export type PaymentVerificationStatus = 'pending_payment' | 'pending_verification' | 'pending_review' | 'approved' | 'rejected'
 
 export type DeliveryStatus = 'received' | 'processing' | 'ready' | 'in_transit' | 'delivered' | 'confirmed'
 
@@ -103,7 +103,7 @@ export interface DeliveryOrder {
   totalAmount: number
   currency: string
   paymentMethod: PaymentMethod
-  deliveryStatus: DeliveryStatus
+  deliveryStatus: DeliveryStatus | null
   shippingMethod: ShippingMethod | null
   assignedDriver: string | null
   shalomData: ShalomOrderPayload | null
@@ -147,6 +147,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 export const PAYMENT_VERIFICATION_STATUS_LABELS: Record<PaymentVerificationStatus, string> = {
   pending_payment: 'Pago Pendiente',
   pending_verification: 'Pago Pendiente de Verificación',
+  pending_review: 'Pendiente de Revisión',
   approved: 'Pago Aprobado',
   rejected: 'Pago Rechazado',
 }
@@ -189,6 +190,7 @@ export type UnifiedOrderStatus = DeliveryStatus | 'pending_payment' | 'pending_v
 export const UNIFIED_STATUS_LABELS: Record<UnifiedOrderStatus, string> = {
   pending_payment: 'Pago Pendiente',
   pending_verification: 'Pendiente de Verificación',
+  pending_review: 'Pendiente de Revisión',
   approved: 'Pago Aprobado',
   rejected: 'Rechazado',
   ...DELIVERY_STATUS_LABELS,
@@ -197,6 +199,7 @@ export const UNIFIED_STATUS_LABELS: Record<UnifiedOrderStatus, string> = {
 export const UNIFIED_STATUS_DOT: Record<UnifiedOrderStatus, string> = {
   pending_payment: 'bg-gray-400',
   pending_verification: 'bg-amber-500',
+  pending_review: 'bg-amber-500',
   approved: 'bg-emerald-500',
   rejected: 'bg-red-500',
   ...DELIVERY_STATUS_DOT,
@@ -205,6 +208,7 @@ export const UNIFIED_STATUS_DOT: Record<UnifiedOrderStatus, string> = {
 export const UNIFIED_STATUS_TEXT: Record<UnifiedOrderStatus, string> = {
   pending_payment: 'text-gray-500',
   pending_verification: 'text-amber-700',
+  pending_review: 'text-amber-700',
   approved: 'text-emerald-600',
   rejected: 'text-red-600',
   ...DELIVERY_STATUS_TEXT,

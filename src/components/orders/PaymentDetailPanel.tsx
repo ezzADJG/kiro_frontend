@@ -76,6 +76,11 @@ export default function PaymentDetailPanel({
             <Ban className="h-4 w-4 text-red-500" />
             <span className="font-medium">Este pedido fue rechazado</span>
           </div>
+        ) : order.status === 'approved' ? (
+          <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <span className="font-medium">Pago aprobado</span>
+          </div>
         ) : (
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
@@ -182,16 +187,22 @@ export default function PaymentDetailPanel({
           </SectionCard>
 
           <SectionCard title="Comprobante de pago" icon={Receipt}>
-            <div className="overflow-hidden rounded-lg border border-border">
-              <img
-                src={order.receiptUrl}
-                alt={`Comprobante ${order.purchaseNumber}`}
-                className="w-full object-contain"
-              />
-            </div>
+            {order.receiptUrl ? (
+              <div className="overflow-hidden rounded-lg border border-border">
+                <img
+                  src={order.receiptUrl}
+                  alt={`Comprobante ${order.purchaseNumber}`}
+                  className="w-full object-contain"
+                />
+              </div>
+            ) : (
+              <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-border bg-muted/30">
+                <p className="text-sm text-muted-foreground">Sin comprobante</p>
+              </div>
+            )}
             <div className="mt-3 space-y-1">
-              <InfoRow label="Referencia" value={order.paymentReference} />
-              <InfoRow label="Banco / Plataforma" value={order.paymentBank} icon={Building2} />
+              <InfoRow label="Referencia" value={order.paymentReference || '—'} />
+              <InfoRow label="Banco / Plataforma" value={order.paymentBank || '—'} icon={Building2} />
               <InfoRow label="Fecha" value={formatDate(order.createdAt)} />
               <InfoRow
                 label="Estado"

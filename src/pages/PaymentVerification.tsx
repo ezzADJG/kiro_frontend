@@ -1,24 +1,25 @@
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle2, X, Clock, Search, ChevronRight, Receipt } from 'lucide-react'
+import { CheckCircle2, X, Search, ChevronRight, Receipt, Ban } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import PaymentBadge from '@/components/orders/PaymentBadge'
 import PaymentDetailPanel from '@/components/orders/PaymentDetailPanel'
 import ReassignModal from '@/components/orders/ReassignModal'
 import { useBusiness } from '@/context/BusinessContext'
 import { useAuth } from '@/context/AuthContext'
-import { subscribePreorders } from '@/lib/db'
+import { subscribeOrders } from '@/lib/db'
 import {
-  approvePreorder,
-  rejectPreorder,
-  assignPreorder,
-  requestPreorderReceipt,
-  seedMockPreorders,
-} from '@/services/preorderService'
+  approveOrder,
+  rejectOrder,
+  assignOrder,
+  requestOrderReceipt,
+} from '@/services/orderService'
+import { mapOrderToPaymentOrder } from '@/utils/orderMappers'
+import { migrateOrders } from '@/services/migrationService'
 import { obtenerMiembrosDeNegocio, obtenerPerfilesDeUsuarios } from '@/services/businessService'
-import { mapPreorderToPaymentOrder } from '@/utils/preorderMappers'
 import { formatCurrency } from '@/data/mockData'
-import type { PaymentOrder } from '@/types/payments'
-import type { Preorder } from '@/types/preorders'
+import type { PaymentOrder, PaymentVerificationStatus } from '@/types/payments'
+import type { Order } from '@/types/order'
 
 interface EmployeeOption {
   id: string
@@ -33,6 +34,8 @@ function formatDateTimeShort(timestamp: number) {
   }).format(new Date(timestamp))
 }
 
+type PaymentTabFilter = 'pending' | 'approved' | 'rejected' | 'all'
+
 export default function PaymentVerification() {
   const { activeBusinessId } = useBusiness()
   const { firebaseUser } = useAuth()
@@ -44,6 +47,7 @@ export default function PaymentVerification() {
   const [toast, setToast] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [employees, setEmployees] = useState<EmployeeOption[]>([])
+  const [activeTab, setActiveTab] = useState<PaymentTabFilter>('pending')
 
   const [rejectReassignOpen, setRejectReassignOpen] = useState(false)
   const [rejectReassignOrderId, setRejectReassignOrderId] = useState<string | null>(null)
@@ -56,26 +60,28 @@ export default function PaymentVerification() {
   useEffect(() => {
     if (!activeBusinessId) return
 
-    const unsub = subscribePreorders(activeBusinessId, (data) => {
-      if (!data) {
-        setOrders([])
+    migrateOrders(activeBusinessId).then(() => {
+      const unsub = subscribeOrders(activeBusinessId, (data) => {
+        if (!data) {
+          setOrders([])
+          setLoading(false)
+          return
+        }
+
+        const entries = Object.entries(data) as [string, any][]
+        const withPayment = entries.filter(([, o]) => o.payment != null)
+
+        const mapped: PaymentOrder[] = withPayment.map(([id, raw]) => {
+          const order: Order = { id, ...raw }
+          return mapOrderToPaymentOrder(order)
+        })
+
+        setOrders(mapped)
         setLoading(false)
-        return
-      }
-
-      const entries = Object.entries(data) as [string, any][]
-      const pending = entries.filter(([, p]) => p.status === 'pending_verification')
-
-      const mapped: PaymentOrder[] = pending.map(([id, raw]) => {
-        const preorder: Preorder = { id, ...raw }
-        return mapPreorderToPaymentOrder(preorder)
       })
 
-      setOrders(mapped)
-      setLoading(false)
+      return () => unsub()
     })
-
-    return () => unsub()
   }, [activeBusinessId])
 
   useEffect(() => {
@@ -100,11 +106,6 @@ export default function PaymentVerification() {
     loadEmployees()
   }, [activeBusinessId])
 
-  useEffect(() => {
-    if (!activeBusinessId) return
-    seedMockPreorders(activeBusinessId)
-  }, [activeBusinessId])
-
   const filteredOrders = orders.filter((order) => {
     if (!searchQuery.trim()) return true
     const q = searchQuery.trim().toLowerCase()
@@ -114,13 +115,24 @@ export default function PaymentVerification() {
     )
   })
 
+  const tabOrders = filteredOrders.filter((order) => {
+    if (activeTab === 'pending') return order.status === 'pending_review'
+    if (activeTab === 'approved') return order.status === 'approved'
+    if (activeTab === 'rejected') return order.status === 'rejected'
+    return true
+  })
+
+  const pendingCount = orders.filter((o) => o.status === 'pending_review').length
+  const approvedCount = orders.filter((o) => o.status === 'approved').length
+  const rejectedCount = orders.filter((o) => o.status === 'rejected').length
+
   const handleApprove = async (id: string) => {
     if (!activeBusinessId) return
 
     try {
       const uid = firebaseUser?.uid ?? 'unknown'
       const name = firebaseUser?.displayName ?? 'Agente'
-      await approvePreorder(activeBusinessId, id, uid, name)
+      await approveOrder(activeBusinessId, id, uid, name)
       showToast('Pago aprobado — Pedido listo para entrega')
     } catch {
       showToast('Error al aprobar el pago')
@@ -138,7 +150,7 @@ export default function PaymentVerification() {
     try {
       const uid = firebaseUser?.uid ?? 'unknown'
       const name = firebaseUser?.displayName ?? 'Agente'
-      await rejectPreorder(activeBusinessId, rejectReassignOrderId, uid, name)
+      await rejectOrder(activeBusinessId, rejectReassignOrderId, uid, name)
       showToast(`Pago rechazado — Chat asignado a ${empName}`)
     } catch {
       showToast('Error al rechazar el pago')
@@ -159,7 +171,7 @@ export default function PaymentVerification() {
     if (!activeBusinessId) return
     try {
       const uid = firebaseUser?.uid ?? 'unknown'
-      await assignPreorder(activeBusinessId, _id, uid, employeeName)
+      await assignOrder(activeBusinessId, _id, uid, employeeName)
       showToast(`Verificación reasignada a ${employeeName}`)
     } catch {
       showToast('Error al reasignar')
@@ -172,7 +184,7 @@ export default function PaymentVerification() {
     const id = orderId || selectedOrder?.id
     if (!activeBusinessId || !id) return
     try {
-      await requestPreorderReceipt(activeBusinessId, id)
+      await requestOrderReceipt(activeBusinessId, id)
       showToast('Solicitud de nuevo comprobante enviada al cliente')
       setPanelOpen(false)
       setSelectedOrder(null)
@@ -194,17 +206,84 @@ export default function PaymentVerification() {
             <h1 className="text-lg font-semibold text-foreground">Verificación de Pagos</h1>
             <p className="mt-0.5 text-sm text-muted-foreground">
               {searchQuery
-                ? `${filteredOrders.length} de ${orders.length} pedidos`
-                : `${orders.length} pedido${orders.length !== 1 ? 's' : ''} pendiente${orders.length !== 1 ? 's' : ''} de verificación`
+                ? `${tabOrders.length} de ${orders.length} pedidos`
+                : `${tabOrders.length} pedido${tabOrders.length !== 1 ? 's' : ''}`
               }
             </p>
           </div>
-          {!loading && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
-              <Clock className="h-3.5 w-3.5 text-amber-600" />
-              {orders.length} pendiente{orders.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      <div className="border-b border-border px-6 pt-4">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'pending'
+                ? 'bg-secondary text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Pendientes
+            <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium ${
+              activeTab === 'pending'
+                ? 'bg-foreground text-background'
+                : 'bg-secondary text-muted-foreground'
+            }`}>
+              {pendingCount}
             </span>
-          )}
+          </button>
+          <button
+            onClick={() => setActiveTab('approved')}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'approved'
+                ? 'bg-secondary text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Aprobados
+            <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium ${
+              activeTab === 'approved'
+                ? 'bg-foreground text-background'
+                : 'bg-secondary text-muted-foreground'
+            }`}>
+              {approvedCount}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('rejected')}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'rejected'
+                ? 'bg-secondary text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Rechazados
+            <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium ${
+              activeTab === 'rejected'
+                ? 'bg-foreground text-background'
+                : 'bg-secondary text-muted-foreground'
+            }`}>
+              {rejectedCount}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'all'
+                ? 'bg-secondary text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Todos
+            <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium ${
+              activeTab === 'all'
+                ? 'bg-foreground text-background'
+                : 'bg-secondary text-muted-foreground'
+            }`}>
+              {orders.length}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -232,7 +311,7 @@ export default function PaymentVerification() {
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-muted-foreground">Cargando pedidos...</p>
           </div>
-        ) : filteredOrders.length === 0 ? (
+        ) : tabOrders.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 py-20">
             {searchQuery ? (
               <>
@@ -252,16 +331,24 @@ export default function PaymentVerification() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary ring-1 ring-foreground/10">
                   <CheckCircle2 className="h-7 w-7 text-emerald-600" />
                 </div>
-                <h3 className="text-base font-medium text-foreground">Todos los pagos verificados</h3>
+                <h3 className="text-base font-medium text-foreground">
+                  {activeTab === 'pending' && 'Sin pagos pendientes'}
+                  {activeTab === 'approved' && 'Sin pagos aprobados'}
+                  {activeTab === 'rejected' && 'Sin pagos rechazados'}
+                  {activeTab === 'all' && 'Sin pagos registrados'}
+                </h3>
                 <p className="max-w-sm text-center text-sm text-muted-foreground">
-                  No hay pedidos pendientes de verificación. Los nuevos pagos aparecerán aquí automáticamente.
+                  {activeTab === 'pending' && 'No hay pagos pendientes de verificación. Los nuevos pagos aparecerán aquí automáticamente.'}
+                  {activeTab === 'approved' && 'Los pagos aprobados aparecerán aquí.'}
+                  {activeTab === 'rejected' && 'Los pagos rechazados aparecerán aquí.'}
+                  {activeTab === 'all' && 'Los pagos aparecerán aquí una vez que los clientes realicen compras.'}
                 </p>
               </>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filteredOrders.map((order) => (
+            {tabOrders.map((order) => (
               <PaymentCard
                 key={order.id}
                 order={order}
@@ -318,13 +405,24 @@ function PaymentCard({
   onRequestReceipt: () => void
   onViewDetails: () => void
 }) {
+  const isPending = order.status === 'pending_review'
+  const isRejected = order.status === 'rejected'
+
   return (
     <div className="rounded-xl bg-white ring-1 ring-foreground/10 transition-all hover:ring-foreground/20">
       <div className="p-4 pb-3 space-y-0.5">
-        <p className="text-sm font-medium text-foreground">{order.paymentReference}</p>
-        <p className="text-sm font-medium text-foreground">{formatCurrency(order.totalAmount, order.currency)}</p>
-        <p className="text-sm font-medium text-foreground">{order.paymentBank}</p>
-        <p className="text-sm font-medium text-foreground">{formatDateTimeShort(order.createdAt)}</p>
+        <p className="text-sm font-medium text-foreground">
+          {order.paymentReference || '—'}
+        </p>
+        <p className="text-sm font-medium text-foreground">
+          {formatCurrency(order.totalAmount, order.currency)}
+        </p>
+        <p className="text-sm font-medium text-foreground">
+          {order.paymentBank || '—'}
+        </p>
+        <p className="text-sm font-medium text-foreground">
+          {formatDateTimeShort(order.createdAt)}
+        </p>
 
         <div className="pt-2 space-y-0.5">
           <p className="text-xs text-muted-foreground">{order.customerName}</p>
@@ -334,48 +432,79 @@ function PaymentCard({
       </div>
 
       <div className="border-t border-border px-4 py-2.5">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
-          Pago Pendiente de Verificación
-        </span>
+        <PaymentBadge status={order.status} />
       </div>
 
       <div className="flex items-center gap-1.5 border-t border-border p-3">
-        <Button
-          size="xs"
-          className="flex-1 gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
-          onClick={onApprove}
-        >
-          <CheckCircle2 className="h-3 w-3" />
-          Aprobar
-        </Button>
-        <Button
-          size="xs"
-          variant="outline"
-          className="flex-1 gap-1 text-destructive"
-          onClick={onRejectStart}
-        >
-          <X className="h-3 w-3" />
-          Rechazar
-        </Button>
-        <Button
-          size="xs"
-          variant="outline"
-          className="gap-1"
-          onClick={onRequestReceipt}
-        >
-          <Receipt className="h-3 w-3" />
-          Pedir comprobante
-        </Button>
-        <Button
-          size="xs"
-          variant="ghost"
-          className="gap-1"
-          onClick={onViewDetails}
-        >
-          <ChevronRight className="h-3 w-3" />
-          Detalles
-        </Button>
+        {isPending ? (
+          <>
+            <Button
+              size="xs"
+              className="flex-1 gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={onApprove}
+            >
+              <CheckCircle2 className="h-3 w-3" />
+              Aprobar
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              className="flex-1 gap-1 text-destructive"
+              onClick={onRejectStart}
+            >
+              <X className="h-3 w-3" />
+              Rechazar
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              className="gap-1"
+              onClick={onRequestReceipt}
+            >
+              <Receipt className="h-3 w-3" />
+            </Button>
+            <Button
+              size="xs"
+              variant="ghost"
+              className="gap-1"
+              onClick={onViewDetails}
+            >
+              <ChevronRight className="h-3 w-3" />
+            </Button>
+          </>
+        ) : isRejected ? (
+          <>
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Ban className="h-3.5 w-3.5 text-red-500" />
+              Rechazado
+            </span>
+            <Button
+              size="xs"
+              variant="ghost"
+              className="ml-auto gap-1"
+              onClick={onViewDetails}
+            >
+              <ChevronRight className="h-3 w-3" />
+              Detalles
+            </Button>
+          </>
+        ) : (
+          <>
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+              Pagado
+            </span>
+            <Button
+              size="xs"
+              variant="ghost"
+              className="ml-auto gap-1"
+              onClick={onViewDetails}
+            >
+              <ChevronRight className="h-3 w-3" />
+              Detalles
+            </Button>
+          </>
+        )}
       </div>
     </div>
   )

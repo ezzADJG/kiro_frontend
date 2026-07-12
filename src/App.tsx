@@ -18,6 +18,7 @@ import PaymentVerification from '@/pages/PaymentVerification'
 import DeliveryDashboard from '@/pages/DeliveryDashboard'
 import OrdersTable from '@/pages/OrdersTable'
 import AceptarInvitacion from '@/pages/AceptarInvitacion'
+import ShippingFormPage from '@/pages/ShippingFormPage'
 import RutaProtegida from '@/components/RutaProtegida'
 import DashboardLayout from '@/components/DashboardLayout'
 
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/registro" element={<Registro />} />
             <Route path="/recuperar" element={<RecuperarContrasena />} />
             <Route path="/invitar" element={<AceptarInvitacion />} />
+            <Route path="/envio/:ordenId" element={<ShippingFormPage />} />
             <Route element={<RutaProtegida />}>
               <Route element={<DashboardLayout />}>
                 <Route path="/dashboard" element={<Inicio />} />

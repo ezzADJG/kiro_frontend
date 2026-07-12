@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from "react"
 import type {
   Packaging,
-  PackagingEquivalence,
   OperatorPackageCategory,
   PackagingType,
 } from "@/types/packaging"
 import { isFlexibleType } from "@/types/packaging"
 
 const STORAGE_KEY_PACKAGINGS = "kiro-packagings"
-const STORAGE_KEY_EQUIVALENCES = "kiro-equivalences"
 const STORAGE_KEY_VERSION = "kiro-packaging-version"
 const CURRENT_VERSION = 2
 
@@ -35,7 +33,6 @@ function clearStorageIfOldVersion() {
   const storedVersion = loadFromStorage<number>(STORAGE_KEY_VERSION, 0)
   if (storedVersion !== CURRENT_VERSION) {
     localStorage.removeItem(STORAGE_KEY_PACKAGINGS)
-    localStorage.removeItem(STORAGE_KEY_EQUIVALENCES)
     localStorage.setItem(STORAGE_KEY_VERSION, JSON.stringify(CURRENT_VERSION))
   }
 }
@@ -87,19 +84,11 @@ export function usePackagingConfig() {
     clearStorageIfOldVersion()
     return loadFromStorage<Packaging[]>(STORAGE_KEY_PACKAGINGS, [])
   })
-  const [equivalences, setEquivalences] = useState<PackagingEquivalence[]>(() => {
-    clearStorageIfOldVersion()
-    return loadFromStorage<PackagingEquivalence[]>(STORAGE_KEY_EQUIVALENCES, [])
-  })
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PACKAGINGS, JSON.stringify(packagings))
   }, [packagings])
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_EQUIVALENCES, JSON.stringify(equivalences))
-  }, [equivalences])
 
   const addPackaging = useCallback(
     (data: Omit<Packaging, "id" | "createdAt" | "updatedAt">) => {
@@ -127,53 +116,30 @@ export function usePackagingConfig() {
     []
   )
 
-  const deletePackaging = useCallback((id: string) => {
-    setPackagings((prev) => prev.filter((p) => p.id !== id))
-    setEquivalences((prev) => prev.filter((e) => e.packagingId !== id))
-  }, [])
-
-  const addEquivalence = useCallback(
-    (data: Omit<PackagingEquivalence, "id">) => {
-      const equivalence: PackagingEquivalence = {
-        ...data,
-        id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2),
-      }
-      setEquivalences((prev) => [...prev, equivalence])
-      return equivalence
+  const deletePackaging = useCallback(
+    (id: string) => {
+      setPackagings((prev) => prev.filter((p) => p.id !== id))
     },
     []
   )
 
-  const updateEquivalence = useCallback(
-    (id: string, data: Partial<Omit<PackagingEquivalence, "id">>) => {
-      setEquivalences((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, ...data } : e))
-      )
-    },
-    []
-  )
-
-  const deleteEquivalence = useCallback((id: string) => {
-    setEquivalences((prev) => prev.filter((e) => e.id !== id))
-  }, [])
-
-  const simulateSave = useCallback(async () => {
+  function simulateSave() {
     setSaving(true)
-    await new Promise((r) => setTimeout(r, 600))
-    setSaving(false)
-  }, [])
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setSaving(false)
+        resolve()
+      }, 400)
+    })
+  }
 
   return {
     packagings,
-    equivalences,
     shalomCategories: DEFAULT_SHALOM_CATEGORIES,
     saving,
     addPackaging,
     updatePackaging,
     deletePackaging,
-    addEquivalence,
-    updateEquivalence,
-    deleteEquivalence,
     simulateSave,
   }
 }

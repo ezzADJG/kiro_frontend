@@ -29,6 +29,7 @@ interface ShippingConfigFormProps {
   onTelefonoChange: (telefono: string) => void
   onAgenciaChange: (agenciaId: number) => void
   onOlvaChange: (campo: string, valor: string) => void
+  onShalomPrecioChange: (campo: "precioLimaCallao" | "precioProvincias", valor: string) => void
   onGuardar: () => void
 }
 
@@ -43,6 +44,7 @@ export default function ShippingConfigForm({
   onTelefonoChange,
   onAgenciaChange,
   onOlvaChange,
+  onShalomPrecioChange,
   onGuardar,
 }: ShippingConfigFormProps) {
   return (
@@ -166,6 +168,39 @@ export default function ShippingConfigForm({
         </section>
       )}
 
+      {/* Precios de envío SHALOM */}
+      {operador === "shalom" && shalomForm && (
+        <section>
+          <h3 className="mb-4 text-sm font-medium text-foreground">
+            Precios de envío (S/.)
+          </h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Precio Lima / Callao</Label>
+              <Input
+                type="number"
+                step="0.10"
+                min="0"
+                value={shalomForm.precioLimaCallao}
+                onChange={(e) => onShalomPrecioChange("precioLimaCallao", e.target.value)}
+                placeholder="Ej: 10.00"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Precio Provincias</Label>
+              <Input
+                type="number"
+                step="0.10"
+                min="0"
+                value={shalomForm.precioProvincias}
+                onChange={(e) => onShalomPrecioChange("precioProvincias", e.target.value)}
+                placeholder="Ej: 15.00"
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Formulario OLVA */}
       {operador === "olva" && olvaForm && (
         <section>
@@ -195,6 +230,39 @@ export default function ShippingConfigForm({
                 value={olvaForm.origen}
                 onChange={(e) => onOlvaChange("origen", e.target.value)}
                 placeholder="Ej: Lima"
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Precios de envío OLVA */}
+      {operador === "olva" && olvaForm && (
+        <section>
+          <h3 className="mb-4 text-sm font-medium text-foreground">
+            Precios de envío (S/.)
+          </h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Precio Lima / Callao</Label>
+              <Input
+                type="number"
+                step="0.10"
+                min="0"
+                value={olvaForm.precioLimaCallao}
+                onChange={(e) => onOlvaChange("precioLimaCallao", e.target.value)}
+                placeholder="Ej: 10.00"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Precio Provincias</Label>
+              <Input
+                type="number"
+                step="0.10"
+                min="0"
+                value={olvaForm.precioProvincias}
+                onChange={(e) => onOlvaChange("precioProvincias", e.target.value)}
+                placeholder="Ej: 15.00"
               />
             </div>
           </div>

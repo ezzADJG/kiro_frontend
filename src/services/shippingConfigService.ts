@@ -28,12 +28,16 @@ export interface ConfigShalom {
   remitente: RemitenteData
   telefono: string
   agenciaSeleccionada: AgenciaSeleccionada | null
+  precioLimaCallao: number | null
+  precioProvincias: number | null
 }
 
 export interface ConfigOlva {
   dni: string
   correo: string
   origen: string
+  precioLimaCallao: number | null
+  precioProvincias: number | null
 }
 
 export interface ShippingConfig {
@@ -45,6 +49,8 @@ export interface OlvaFormData {
   dni: string
   correo: string
   origen: string
+  precioLimaCallao: number | null
+  precioProvincias: number | null
 }
 
 export function mapearRemitenteDesdeBusiness(
@@ -72,6 +78,8 @@ export function mapearOlvaDesdeBusiness(
     dni: "",
     correo: business.email ?? "",
     origen: business.address.department ?? "",
+    precioLimaCallao: null,
+    precioProvincias: null,
   }
 }
 

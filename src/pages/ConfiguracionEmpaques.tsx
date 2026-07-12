@@ -10,7 +10,6 @@ import { ArrowLeft } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import PackagingTable from "@/components/packaging/PackagingTable"
 import PackagingModal from "@/components/packaging/PackagingModal"
-import EquivalenceTable from "@/components/packaging/EquivalenceTable"
 import DeleteConfirmDialog from "@/components/packaging/DeleteConfirmDialog"
 import ShippingConfigForm from "@/components/packaging/ShippingConfigForm"
 import type { Packaging } from "@/types/packaging"
@@ -20,14 +19,10 @@ export default function ConfiguracionEmpaques() {
   const navigate = useNavigate()
   const {
     packagings,
-    equivalences,
     shalomCategories,
     addPackaging,
     updatePackaging,
     deletePackaging,
-    addEquivalence,
-    updateEquivalence,
-    deleteEquivalence,
     simulateSave,
   } = usePackagingConfig()
 
@@ -43,6 +38,7 @@ export default function ConfiguracionEmpaques() {
     actualizarTelefono,
     seleccionarAgencia,
     actualizarOlva,
+    actualizarShalomPrecio,
     guardar: guardarShippingConfig,
   } = useShippingConfig(activeBusinessId)
 
@@ -124,39 +120,8 @@ export default function ConfiguracionEmpaques() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTab value="empaques">Mis empaques</TabsTab>
           <TabsTab value="envios">Configuración de envíos</TabsTab>
         </TabsList>
-
-        <TabsPanel value="empaques">
-          <div className="flex flex-col gap-8">
-            <section>
-              <h2 className="mb-4 text-sm font-medium text-foreground">Mis empaques</h2>
-              <PackagingTable
-                packagings={packagings}
-                shalomCategories={shalomCategories}
-                onNew={handleNew}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            </section>
-
-            <section>
-              <h2 className="mb-4 text-sm font-medium text-foreground">
-                Tabla de equivalencias
-              </h2>
-              <EquivalenceTable
-                packagings={packagings}
-                equivalences={equivalences}
-                shalomCategories={shalomCategories}
-                onAdd={addEquivalence}
-                onUpdate={updateEquivalence}
-                onDelete={deleteEquivalence}
-              />
-            </section>
-          </div>
-        </TabsPanel>
-
         <TabsPanel value="envios">
           {shippingCargando ? (
             <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
@@ -174,6 +139,7 @@ export default function ConfiguracionEmpaques() {
               onTelefonoChange={actualizarTelefono}
               onAgenciaChange={seleccionarAgencia}
               onOlvaChange={actualizarOlva}
+              onShalomPrecioChange={actualizarShalomPrecio}
               onGuardar={handleGuardarShipping}
             />
           ) : (
@@ -191,13 +157,6 @@ export default function ConfiguracionEmpaques() {
         onSave={handleSave}
         editingPackaging={editingPackaging}
         shalomCategories={shalomCategories}
-      />
-
-      <DeleteConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={() => setDeleteTarget(null)}
-        onConfirm={confirmDelete}
-        packagingName={deleteTarget?.name ?? ""}
       />
 
       {/* Toast notifications */}

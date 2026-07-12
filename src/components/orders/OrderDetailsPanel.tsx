@@ -2,12 +2,13 @@ import { useState } from 'react'
 import {
   Package, User, Banknote, MapPin, Truck, CheckCircle2, Loader2, Calendar,
   ArrowRight, Map, Store, Hash, Sparkles, Play, PackageCheck, Ban, X, Receipt,
-  Building, UserCheck,
+  Building, UserCheck, Copy, Link2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import SlidePanel from './SlidePanel'
 import ReassignModal from './ReassignModal'
 import PaymentBadge from './PaymentBadge'
+import { toast } from '@/hooks/use-toast'
 import type { PaymentOrder, DeliveryOrder, ShippingMethod } from '@/types/payments'
 import {
   PAYMENT_METHOD_LABELS,
@@ -27,6 +28,7 @@ interface OrderDetailsPanelProps {
   open: boolean
   onClose: () => void
   order: PaymentOrder | DeliveryOrder | null
+  businessId: string
   onApprovePayment: (orderId: string) => void
   onRejectPayment: (orderId: string) => void
   onReassignPayment: (orderId: string, name: string) => void
@@ -75,6 +77,7 @@ export default function OrderDetailsPanel({
   open,
   onClose,
   order,
+  businessId,
   onApprovePayment,
   onRejectPayment,
   onReassignPayment,
@@ -93,6 +96,16 @@ export default function OrderDetailsPanel({
     setActionLoading(action)
     await Promise.resolve(callback())
     setActionLoading(null)
+  }
+
+  const handleCopyLink = async () => {
+    const link = `${window.location.origin}/envio/${order.id}?biz=${businessId}`
+    try {
+      await navigator.clipboard.writeText(link)
+      toast({ title: 'Link copiado', description: 'Link de datos de envío copiado al portapapeles.', variant: 'success' })
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo copiar el link.', variant: 'error' })
+    }
   }
 
   const isPayment = isPaymentOrder(order)
@@ -181,13 +194,31 @@ export default function OrderDetailsPanel({
               <span className="font-medium">Este pedido fue rechazado</span>
             </div>
           )
+        case 'approved':
+          return (
+            <div className="space-y-2">
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <span className="font-medium">Pago aprobado</span>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full gap-1.5"
+                onClick={handleCopyLink}
+                disabled={actionLoading !== null}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                <Link2 className="h-3.5 w-3.5" />
+                Copiar link de envío
+              </Button>
+            </div>
+          )
         default:
           return (
             <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <span className="font-medium">
-                {po.status === 'approved' ? 'Pago aprobado' : 'Esperando pago del cliente'}
-              </span>
+              <CheckCircle2 className="h-4 w-4 text-muted-foreground/30" />
+              <span className="font-medium">Esperando pago del cliente</span>
             </div>
           )
       }
@@ -329,7 +360,8 @@ export default function OrderDetailsPanel({
       const po = order as PaymentOrder
       return PAYMENT_VERIFICATION_STATUS_LABELS[po.status]
     }
-    return DELIVERY_STATUS_LABELS[(order as DeliveryOrder).deliveryStatus]
+    const dStatus = (order as DeliveryOrder).deliveryStatus
+    return dStatus ? DELIVERY_STATUS_LABELS[dStatus] : '—'
   }
 
   return (
@@ -397,7 +429,7 @@ export default function OrderDetailsPanel({
           </SectionCard>
 
           <SectionCard title="Información de pago" icon={Receipt}>
-            {isPayment && (order as PaymentOrder).receiptUrl && (
+            {isPayment && (order as PaymentOrder).receiptUrl ? (
               <div className="mb-3 overflow-hidden rounded-lg border border-border">
                 <img
                   src={(order as PaymentOrder).receiptUrl}
@@ -405,11 +437,15 @@ export default function OrderDetailsPanel({
                   className="w-full object-contain"
                 />
               </div>
-            )}
+            ) : isPayment ? (
+              <div className="mb-3 flex h-32 items-center justify-center rounded-lg border border-dashed border-border bg-muted/30">
+                <p className="text-sm text-muted-foreground">Sin comprobante</p>
+              </div>
+            ) : null}
             {isPayment ? (
               <div className="space-y-1">
-                <InfoRow label="Referencia" value={(order as PaymentOrder).paymentReference} />
-                <InfoRow label="Banco / Plataforma" value={(order as PaymentOrder).paymentBank} icon={Building} />
+                <InfoRow label="Referencia" value={(order as PaymentOrder).paymentReference || '—'} />
+                <InfoRow label="Banco / Plataforma" value={(order as PaymentOrder).paymentBank || '—'} icon={Building} />
                 <InfoRow label="Fecha" value={formatDate((order as PaymentOrder).createdAt)} />
                 <InfoRow label="Estado" value={<PaymentBadge status={(order as PaymentOrder).status} />} />
               </div>
@@ -431,10 +467,10 @@ export default function OrderDetailsPanel({
                       <Truck className="h-3 w-3 text-orange-600" />
                     ) : deliveryStatus === 'delivered' || deliveryStatus === 'confirmed' ? (
                       <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                    ) : (
+                    ) : deliveryStatus ? (
                       <Package className="h-3 w-3 text-blue-600" />
-                    )}
-                    {DELIVERY_STATUS_LABELS[deliveryStatus!]}
+                    ) : null}
+                    {deliveryStatus ? DELIVERY_STATUS_LABELS[deliveryStatus] : '—'}
                   </span>
                 </div>
                 <Divider />

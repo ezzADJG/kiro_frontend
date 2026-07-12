@@ -201,17 +201,6 @@ export default function OrderDetailsPanel({
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                 <span className="font-medium">Pago aprobado</span>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full gap-1.5"
-                onClick={handleCopyLink}
-                disabled={actionLoading !== null}
-              >
-                <Copy className="h-3.5 w-3.5" />
-                <Link2 className="h-3.5 w-3.5" />
-                Copiar link de envío
-              </Button>
             </div>
           )
         default:
@@ -389,6 +378,18 @@ export default function OrderDetailsPanel({
               <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary" title="Ver en mapa">
                 <Map className="h-4 w-4" />
               </button>
+            </div>
+            <div className="mt-3 pt-3 border-t border-border">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full gap-1.5"
+                onClick={handleCopyLink}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                <Link2 className="h-3.5 w-3.5" />
+                Copiar link de envío
+              </Button>
             </div>
           </SectionCard>
 

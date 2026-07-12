@@ -163,9 +163,7 @@ export default function OrdersTable() {
           const order: Order = { id, ...raw }
           if (order.status === 'pending_review' || order.status === 'rejected') {
             payments.push(mapOrderToPaymentOrder(order))
-          }
-          if (order.status === 'approved') {
-            payments.push(mapOrderToPaymentOrder(order))
+          } else if (order.status === 'approved') {
             deliveries.push(mapOrderToDeliveryOrder(order))
           }
         }

@@ -1,28 +1,22 @@
 export type PackagingType =
   | "caja"
-  | "bolsa_courier"
   | "sobre"
-  | "tubo"
   | "otro"
 
 export const PACKAGING_TYPE_LABELS: Record<PackagingType, string> = {
   caja: "Caja",
-  bolsa_courier: "Bolsa Courier",
   sobre: "Sobre",
-  tubo: "Tubo",
   otro: "Otro",
 }
 
 export const PACKAGING_TYPES: { value: PackagingType; label: string }[] = [
   { value: "caja", label: "Caja" },
-  { value: "bolsa_courier", label: "Bolsa Courier" },
   { value: "sobre", label: "Sobre" },
-  { value: "tubo", label: "Tubo" },
   { value: "otro", label: "Otro" },
 ]
 
 export function isFlexibleType(type: PackagingType): boolean {
-  return type === "bolsa_courier"
+  return type === "otro"
 }
 
 export interface Packaging {

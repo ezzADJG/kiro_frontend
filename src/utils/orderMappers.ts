@@ -1,6 +1,7 @@
 import type { PaymentOrder, OrderProduct, DeliveryStatus } from '@/types/payments'
-import type { DeliveryOrder, ShalomOrderPayload, ShalomTracking } from '@/types/payments'
+import type { DeliveryOrder, ShalomOrderPayload, ShalomTracking, OlvaTracking } from '@/types/payments'
 import type { Order } from '@/types/order'
+import type { Transportista } from '@/types/shipping'
 import { generatePurchaseNumber } from '@/services/orderService'
 
 function productsFromItems(items: Record<string, any>): OrderProduct[] {
@@ -39,6 +40,8 @@ export function mapOrderToDeliveryOrder(
   order: Order,
   shalomData?: ShalomOrderPayload | null,
   shalomTracking?: ShalomTracking | null,
+  transportista?: Transportista | null,
+  olvaTracking?: OlvaTracking | null,
 ): DeliveryOrder {
   return {
     id: order.id,
@@ -54,9 +57,11 @@ export function mapOrderToDeliveryOrder(
     paymentMethod: order.payment?.method || 'yape',
     deliveryStatus: (order.deliveryStatus as DeliveryStatus) || null,
     shippingMethod: order.shippingMethod || null,
+    transportista: transportista || null,
     assignedDriver: order.assignedDriver || null,
     shalomData: shalomData || null,
     shalomTracking: shalomTracking || null,
+    olvaTracking: olvaTracking || null,
     approvedBy: order.assignedToName || order.payment?.verifiedBy || '—',
     approvedAt: order.payment?.verifiedAt || order.assignedAt || order.createdAt,
   }

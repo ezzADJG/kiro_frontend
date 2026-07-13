@@ -461,3 +461,143 @@ function parseCSVLine(line: string): string[] {
   result.push(current.trim())
   return result
 }
+
+import type { DeliveryOrder } from '@/types/payments'
+import type { ShippingConfig } from '@/services/shippingConfigService'
+import shalomTemplateUrl from '../excel/shalom.xlsx?url'
+import olvaTemplateUrl from '../excel/olva.xlsx?url'
+
+interface ShippingDataEntry {
+  transportista?: string
+  datosEnvio?: Record<string, any>
+}
+
+function safe(val: unknown): string {
+  if (val === null || val === undefined) return ''
+  return String(val)
+}
+
+async function loadWorkbookFromUrl(url: string): Promise<ExcelJS.Workbook> {
+  const response = await fetch(url)
+  const buffer = await response.arrayBuffer()
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.load(buffer)
+  return workbook
+}
+
+function splitAddress(address: string): { direccion: string; distrito: string; provincia: string; departamento: string } {
+  const parts = address.split(',').map((p) => p.trim())
+  return {
+    direccion: parts[0] || '',
+    distrito: parts[1] || '',
+    provincia: parts[2] || '',
+    departamento: parts[3] || '',
+  }
+}
+
+function splitCustomerName(name: string): { nombres: string; apellidoPaterno: string; apellidoMaterno: string } {
+  const parts = name.trim().split(/\s+/)
+  return {
+    nombres: parts[0] || '',
+    apellidoPaterno: parts[1] || '',
+    apellidoMaterno: parts.slice(2).join(' ') || '',
+  }
+}
+
+function productsDescription(products: DeliveryOrder['products']): string {
+  return products.map((p) => `${p.quantity}x ${p.name}`).join(', ')
+}
+
+export async function exportToShalomExcel(
+  orders: DeliveryOrder[],
+  shippingDataMap: Record<string, ShippingDataEntry>,
+  config: ShippingConfig | null
+): Promise<void> {
+  const workbook = await loadWorkbookFromUrl(shalomTemplateUrl)
+  const ws = workbook.getWorksheet('Hoja1')
+  if (!ws) {
+    throw new Error('No se encontró la hoja de cálculo en la plantilla de Shalom')
+  }
+
+  const originAgency = config?.shalom?.agenciaSeleccionada?.nombre || ''
+
+  for (let i = 0; i < orders.length; i++) {
+    const order = orders[i]
+    const sd = shippingDataMap[order.id]?.datosEnvio as Record<string, any> | undefined
+    const row = ws.getRow(i + 2)
+
+    row.getCell(2).value = safe(sd?.documentoDestinatario || order.customerDNI)
+    row.getCell(3).value = safe(sd?.telefonoDestinatario || order.customerPhone)
+    row.getCell(4).value = safe(sd?.documentoContacto || sd?.documentoDestinatario || order.customerDNI)
+    row.getCell(5).value = safe(sd?.telefonoContacto || sd?.telefonoDestinatario || order.customerPhone)
+    row.getCell(6).value = safe(order.purchaseNumber)
+    row.getCell(7).value = safe(originAgency)
+    row.getCell(8).value = safe(sd?.agenciaDestino || '')
+    row.getCell(9).value = safe(sd?.descripcionMercaderia || productsDescription(order.products))
+    row.getCell(14).value = 1
+
+    row.commit()
+  }
+
+  await downloadWorkbook(workbook, 'envios_shalom.xlsx')
+}
+
+export async function exportToOlvaExcel(
+  orders: DeliveryOrder[],
+  shippingDataMap: Record<string, ShippingDataEntry>,
+  _config: ShippingConfig | null
+): Promise<void> {
+  const workbook = await loadWorkbookFromUrl(olvaTemplateUrl)
+  const ws = workbook.getWorksheet('InputData')
+  if (!ws) {
+    throw new Error('No se encontró la hoja InputData en la plantilla de Olva')
+  }
+
+  for (let i = 0; i < orders.length; i++) {
+    const order = orders[i]
+    const sd = shippingDataMap[order.id]?.datosEnvio as Record<string, any> | undefined
+    const addr = splitAddress(order.deliveryAddress)
+    const nameParts = splitCustomerName(order.customerName)
+    const row = ws.getRow(i + 5)
+
+    row.getCell(1).value = safe(order.purchaseNumber)
+    row.getCell(2).value = 'DOMICILIO'
+    row.getCell(3).value = safe(addr.departamento)
+    row.getCell(4).value = safe(addr.provincia)
+    row.getCell(5).value = safe(addr.distrito)
+    row.getCell(6).value = safe(addr.direccion)
+    row.getCell(7).value = ''
+    row.getCell(8).value = ''
+    row.getCell(9).value = ''
+    row.getCell(10).value = safe(sd?.tipoArticulo || '')
+    row.getCell(11).value = safe(productsDescription(order.products))
+    row.getCell(12).value = order.totalAmount
+    row.getCell(13).value = ''
+    row.getCell(14).value = ''
+    row.getCell(15).value = ''
+    row.getCell(16).value = ''
+    row.getCell(17).value = ''
+    row.getCell(18).value = ''
+    row.getCell(19).value = safe(sd?.tipoDocumento || 'DNI')
+    row.getCell(20).value = safe(order.customerDNI)
+    row.getCell(21).value = safe(sd?.celular || order.customerPhone)
+    row.getCell(22).value = safe(sd?.razonSocial || order.customerName)
+    row.getCell(23).value = safe(sd?.contacto || order.customerPhone)
+    row.getCell(24).value = safe(nameParts.nombres)
+    row.getCell(25).value = safe(sd?.apellidoPaterno || nameParts.apellidoPaterno)
+    row.getCell(26).value = safe(sd?.apellidoMaterno || nameParts.apellidoMaterno)
+
+    row.commit()
+  }
+
+  const lastDataRow = 5 + orders.length
+  for (let r = lastDataRow; r <= 104; r++) {
+    const row = ws.getRow(r)
+    for (let c = 1; c <= 26; c++) {
+      row.getCell(c).value = null
+    }
+    row.commit()
+  }
+
+  await downloadWorkbook(workbook, 'envios_olva.xlsx')
+}

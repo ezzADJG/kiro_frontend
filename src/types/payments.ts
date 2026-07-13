@@ -91,6 +91,11 @@ export interface ShalomProduct {
   }
 }
 
+export interface OlvaTracking {
+  nroEnvio: string
+  codigo: string
+}
+
 export interface DeliveryOrder {
   id: string
   paymentOrderId: string
@@ -105,9 +110,11 @@ export interface DeliveryOrder {
   paymentMethod: PaymentMethod
   deliveryStatus: DeliveryStatus | null
   shippingMethod: ShippingMethod | null
+  transportista: 'SHALOM' | 'OLVA' | null
   assignedDriver: string | null
   shalomData: ShalomOrderPayload | null
   shalomTracking: ShalomTracking | null
+  olvaTracking: OlvaTracking | null
   approvedBy: string
   approvedAt: number
 }
@@ -190,7 +197,6 @@ export type UnifiedOrderStatus = DeliveryStatus | 'pending_payment' | 'pending_v
 export const UNIFIED_STATUS_LABELS: Record<UnifiedOrderStatus, string> = {
   pending_payment: 'Pago Pendiente',
   pending_verification: 'Pendiente de Verificación',
-  pending_review: 'Pendiente de Revisión',
   approved: 'Pago Aprobado',
   rejected: 'Rechazado',
   ...DELIVERY_STATUS_LABELS,
@@ -199,7 +205,6 @@ export const UNIFIED_STATUS_LABELS: Record<UnifiedOrderStatus, string> = {
 export const UNIFIED_STATUS_DOT: Record<UnifiedOrderStatus, string> = {
   pending_payment: 'bg-gray-400',
   pending_verification: 'bg-amber-500',
-  pending_review: 'bg-amber-500',
   approved: 'bg-emerald-500',
   rejected: 'bg-red-500',
   ...DELIVERY_STATUS_DOT,
@@ -208,7 +213,6 @@ export const UNIFIED_STATUS_DOT: Record<UnifiedOrderStatus, string> = {
 export const UNIFIED_STATUS_TEXT: Record<UnifiedOrderStatus, string> = {
   pending_payment: 'text-gray-500',
   pending_verification: 'text-amber-700',
-  pending_review: 'text-amber-700',
   approved: 'text-emerald-600',
   rejected: 'text-red-600',
   ...DELIVERY_STATUS_TEXT,

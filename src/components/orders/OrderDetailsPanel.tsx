@@ -129,6 +129,8 @@ export default function OrderDetailsPanel({
   const deliveryOrder = !isPayment ? (order as DeliveryOrder) : null
   const shalomData = deliveryOrder?.shalomData ?? null
   const shalomTracking = deliveryOrder?.shalomTracking ?? null
+  const olvaTracking = deliveryOrder?.olvaTracking ?? null
+  const transportista = deliveryOrder?.transportista ?? null
   const deliveryStatus = deliveryOrder?.deliveryStatus ?? null
   const shippingMethod = deliveryOrder?.shippingMethod ?? null
   const assignedDriver = deliveryOrder?.assignedDriver ?? null
@@ -500,7 +502,7 @@ export default function OrderDetailsPanel({
                   </div>
                 )}
 
-                {shippingMethod === 'courier' && shalomData && (
+                {shippingMethod === 'courier' && transportista === 'SHALOM' && shalomData && (
                   <div className="space-y-2 rounded-lg bg-secondary/30 p-3 ring-1 ring-foreground/5">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Datos Shalom
@@ -564,6 +566,24 @@ export default function OrderDetailsPanel({
                         )}
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {shippingMethod === 'courier' && transportista === 'OLVA' && (
+                  <div className="space-y-2 rounded-lg bg-secondary/30 p-3 ring-1 ring-foreground/5">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Datos Olva
+                    </p>
+                    {olvaTracking && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-mono font-medium text-foreground">{olvaTracking.nroEnvio}</span>
+                        <span className="text-muted-foreground">· {olvaTracking.codigo}</span>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Envío registrado a través de Olva Courier.
+                    </p>
                   </div>
                 )}
 

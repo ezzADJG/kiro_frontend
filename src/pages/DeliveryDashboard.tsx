@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ref, onValue } from 'firebase/database'
 import { db } from '@/lib/firebase'
 import {
   MapPin, Truck, CheckCircle2, Package, ChevronRight, ListRestart,
   Search, UserCheck, Clock, Store, Hash, ArrowRight,
-  Play, PackageCheck, Sparkles,
+  Play, PackageCheck, Sparkles, Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import DeliveryDetailPanel from '@/components/orders/DeliveryDetailPanel'
 import AssignDriverModal from '@/components/orders/AssignDriverModal'
-import ShalomShippingModal from '@/components/orders/ShalomShippingModal'
+import CourierShippingModal from '@/components/orders/CourierShippingModal'
 import { useBusiness } from '@/context/BusinessContext'
 import { subscribeOrders } from '@/lib/db'
 import {
@@ -18,17 +18,23 @@ import {
   updateOrderShipping,
 } from '@/services/orderService'
 import { saveShippingData } from '@/services/shippingDataService'
+import { fetchShippingConfig } from '@/services/shippingConfigService'
 import { mapOrderToDeliveryOrder } from '@/utils/orderMappers'
 import { migrateOrders } from '@/services/migrationService'
+import { exportToShalomExcel, exportToOlvaExcel } from '@/lib/excel'
 import {
   DELIVERY_STATUS_LABELS, DELIVERY_STATUS_DOT, DELIVERY_STATUS_TEXT,
   SHIPPING_METHOD_LABELS,
 } from '@/types/payments'
 import { formatCurrency, formatTime, formatDate } from '@/data/mockData'
-import type { DeliveryOrder, ShippingMethod, ShalomOrderPayload, ShalomTracking } from '@/types/payments'
+import type { DeliveryOrder, ShippingMethod, ShalomOrderPayload, ShalomTracking, OlvaTracking } from '@/types/payments'
 import type { Order } from '@/types/order'
+import type { ShippingConfig } from '@/services/shippingConfigService'
+import type { Transportista } from '@/types/shipping'
+import type { Packaging } from '@/types/packaging'
 
 type SortKey = 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc' | 'shipping_asc'
+type CarrierFilter = 'all' | 'shalom' | 'olva'
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'date_desc', label: 'Fecha (más reciente)' },
@@ -38,22 +44,53 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'shipping_asc', label: 'Método de envío (A-Z)' },
 ]
 
+const CARRIER_FILTERS: { value: CarrierFilter; label: string }[] = [
+  { value: 'all', label: 'Todos' },
+  { value: 'shalom', label: 'Shalom' },
+  { value: 'olva', label: 'Olva' },
+]
+
 export default function DeliveryDashboard() {
   const { activeBusinessId } = useBusiness()
   const [orders, setOrders] = useState<DeliveryOrder[]>([])
+  const [shippingDataMap, setShippingDataMap] = useState<Record<string, any>>({})
+  const [shippingConfig, setShippingConfig] = useState<ShippingConfig | null>(null)
+  const [packagings, setPackagings] = useState<Packaging[]>([])
+  const [carrierFilter, setCarrierFilter] = useState<CarrierFilter>('all')
   const [selectedOrder, setSelectedOrder] = useState<DeliveryOrder | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [assignModalOrderId, setAssignModalOrderId] = useState<string | null>(null)
-  const [shalomModalOrderId, setShalomModalOrderId] = useState<string | null>(null)
+  const [courierModalOrderId, setCourierModalOrderId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('date_desc')
   const [sortOpen, setSortOpen] = useState(false)
+  const [filterOpen, setFilterOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
-  const showToast = (msg: string) => {
+  const showToast = useCallback((msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 2500)
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!activeBusinessId) return
+
+    const stored = localStorage.getItem('kiro-packagings')
+    if (stored) {
+      try { setPackagings(JSON.parse(stored)) } catch { /* ignore */ }
+    }
+
+    fetchShippingConfig(activeBusinessId).then(setShippingConfig)
+
+    const shippingRef = ref(db, `shippingData/${activeBusinessId}`)
+    const unsubShipping = onValue(shippingRef, (snap) => {
+      setShippingDataMap(snap.val() || {})
+    })
+
+    return () => {
+      unsubShipping()
+    }
+  }, [activeBusinessId])
 
   useEffect(() => {
     if (!activeBusinessId) return
@@ -70,7 +107,9 @@ export default function DeliveryDashboard() {
 
         const mapped: DeliveryOrder[] = approved.map(([id, raw]) => {
           const order: Order = { id, ...raw }
-          return mapOrderToDeliveryOrder(order)
+          const sd = shippingDataMap[id] as Record<string, any> | undefined
+          const transportista = (sd?.transportista as Transportista) || null
+          return mapOrderToDeliveryOrder(order, undefined, undefined, transportista)
         })
 
         setOrders(mapped)
@@ -78,9 +117,14 @@ export default function DeliveryDashboard() {
 
       return () => unsub()
     })
-  }, [activeBusinessId])
+  }, [activeBusinessId, shippingDataMap])
 
   const filteredOrders = orders
+    .filter((order) => {
+      if (carrierFilter === 'shalom') return order.transportista === 'SHALOM'
+      if (carrierFilter === 'olva') return order.transportista === 'OLVA'
+      return true
+    })
     .filter((order) => {
       if (!searchQuery.trim()) return true
       const q = searchQuery.trim().toLowerCase()
@@ -117,13 +161,32 @@ export default function DeliveryDashboard() {
     showToast(`Conductor asignado: ${driverName}`)
   }
 
-  const handleShalomGenerate = async (orderId: string, payload: ShalomOrderPayload, tracking: ShalomTracking) => {
+  const handleCourierGenerate = async (
+    orderId: string,
+    payload: ShalomOrderPayload | Record<string, any>,
+    tracking: ShalomTracking | OlvaTracking,
+  ) => {
     if (!activeBusinessId) return
+    const sd = shippingDataMap[orderId] as Record<string, any> | undefined
+    const isShalom = sd?.transportista === 'SHALOM'
     await updateOrderShipping(activeBusinessId, orderId, 'courier')
     await saveShippingData(activeBusinessId, orderId, { type: 'courier', tracking }, payload)
-    setShalomModalOrderId(null)
-    showToast(`Guía Shalom generada: ${tracking.guia}`)
+    setCourierModalOrderId(null)
+    if ('guia' in tracking) {
+      showToast(`Guía Shalom generada: ${(tracking as ShalomTracking).guia}`)
+    } else {
+      showToast(`Guía Olva generada: ${(tracking as OlvaTracking).nroEnvio}`)
+    }
   }
+
+  const handleExportExcel = useCallback(async () => {
+    if (!activeBusinessId) return
+    if (carrierFilter === 'shalom') {
+      await exportToShalomExcel(filteredOrders, shippingDataMap, shippingConfig)
+    } else if (carrierFilter === 'olva') {
+      await exportToOlvaExcel(filteredOrders, shippingDataMap, shippingConfig)
+    }
+  }, [activeBusinessId, carrierFilter, filteredOrders, shippingDataMap, shippingConfig])
 
   const handleStatusTransition = async (orderId: string, nextStatus: DeliveryOrder['deliveryStatus']) => {
     if (!activeBusinessId) return
@@ -148,7 +211,8 @@ export default function DeliveryDashboard() {
   const statusCounts = (status: DeliveryOrder['deliveryStatus']) =>
     orders.filter((o) => o.deliveryStatus === status).length
 
-  const shalomOrder = shalomModalOrderId ? orders.find((o) => o.id === shalomModalOrderId) ?? null : null
+  const courierOrder = courierModalOrderId ? orders.find((o) => o.id === courierModalOrderId) ?? null : null
+  const courierTransportista = courierOrder ? (shippingDataMap[courierOrder.id]?.transportista as Transportista) || null : null
 
   return (
     <div className="flex h-full flex-col">
@@ -200,6 +264,22 @@ export default function DeliveryDashboard() {
             />
           </div>
 
+          <div className="flex items-center gap-1.5 rounded-lg bg-secondary p-0.5 ring-1 ring-foreground/5">
+            {CARRIER_FILTERS.map((cf) => (
+              <button
+                key={cf.value}
+                onClick={() => setCarrierFilter(cf.value)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  carrierFilter === cf.value
+                    ? 'bg-background text-foreground shadow-sm ring-1 ring-foreground/10'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {cf.label}
+              </button>
+            ))}
+          </div>
+
           <div className="relative">
             <Button
               variant="outline"
@@ -230,6 +310,18 @@ export default function DeliveryDashboard() {
               </>
             )}
           </div>
+
+          {(carrierFilter === 'shalom' || carrierFilter === 'olva') && filteredOrders.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportExcel}
+              className="gap-1.5"
+            >
+              <Download className="h-3 w-3" />
+              Exportar Excel ({carrierFilter === 'shalom' ? 'Shalom' : 'Olva'})
+            </Button>
+          )}
 
           {searchQuery && (
             <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
@@ -275,7 +367,7 @@ export default function DeliveryDashboard() {
                 order={order}
                 onSetShippingMethod={(method) => {
                   if (method === 'motorizado') setAssignModalOrderId(order.id)
-                  else if (method === 'courier') setShalomModalOrderId(order.id)
+                  else if (method === 'courier') setCourierModalOrderId(order.id)
                   else handleSetShippingMethod(order.id, method)
                 }}
                 onStatusTransition={(s) => handleStatusTransition(order.id, s)}
@@ -298,16 +390,20 @@ export default function DeliveryDashboard() {
         order={selectedOrder}
         onStatusTransition={(id, s) => handleStatusTransition(id, s)}
         onSetShippingMethod={(id, m) => handleSetShippingMethod(id, m)}
-        onOpenShalom={(id) => setShalomModalOrderId(id)}
+        onOpenShalom={(id) => setCourierModalOrderId(id)}
         onOpenDriverAssignment={(id) => setAssignModalOrderId(id)}
       />
 
-      {shalomOrder && (
-        <ShalomShippingModal
-          open={shalomModalOrderId !== null}
-          onClose={() => setShalomModalOrderId(null)}
-          onGenerate={handleShalomGenerate}
-          order={shalomOrder}
+      {courierOrder && courierTransportista && (
+        <CourierShippingModal
+          open={courierModalOrderId !== null}
+          onClose={() => setCourierModalOrderId(null)}
+          onGenerate={handleCourierGenerate}
+          order={courierOrder}
+          transportista={courierTransportista}
+          shippingData={shippingDataMap[courierOrder.id]}
+          shippingConfig={shippingConfig}
+          packagings={packagings}
         />
       )}
 
@@ -362,6 +458,12 @@ function DeliveryCard({
               <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-mono text-blue-700 ring-1 ring-blue-200">
                 <Hash className="h-2.5 w-2.5" />
                 {order.shalomTracking.guia}
+              </span>
+            )}
+            {order.shippingMethod === 'courier' && order.olvaTracking && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-mono text-blue-700 ring-1 ring-blue-200">
+                <Hash className="h-2.5 w-2.5" />
+                {order.olvaTracking.nroEnvio}
               </span>
             )}
           </div>
@@ -431,7 +533,9 @@ function DeliveryCard({
         <div className="border-t border-border/50 px-4 py-1.5">
           <div className="inline-flex items-center gap-1.5 rounded-md bg-secondary/50 px-2 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-foreground/5">
             {shippingIcon(order.shippingMethod)}
-            {SHIPPING_METHOD_LABELS[order.shippingMethod]}
+            {order.shippingMethod === 'courier'
+              ? `Courier (${order.transportista || '—'})`
+              : SHIPPING_METHOD_LABELS[order.shippingMethod]}
             {order.shippingMethod === 'motorizado' && order.assignedDriver && (
               <span className="text-muted-foreground/70">· {order.assignedDriver}</span>
             )}

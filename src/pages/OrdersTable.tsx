@@ -32,7 +32,7 @@ import { mapOrderToPaymentOrder, mapOrderToDeliveryOrder } from '@/utils/orderMa
 import { migrateOrders } from '@/services/migrationService'
 import { toast } from '@/hooks/use-toast'
 import { SHIPPING_METHOD_LABELS } from '@/types/payments'
-import { formatCurrency } from '@/data/mockData'
+import { formatCurrency } from '@/utils/format'
 import type { PaymentOrder, DeliveryOrder, ShippingMethod, PaymentVerificationStatus, UnifiedOrderStatus, ShalomOrderPayload, ShalomTracking } from '@/types/payments'
 import type { Order } from '@/types/order'
 

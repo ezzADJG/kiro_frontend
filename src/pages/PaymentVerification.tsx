@@ -17,7 +17,7 @@ import {
 import { mapOrderToPaymentOrder } from '@/utils/orderMappers'
 import { migrateOrders } from '@/services/migrationService'
 import { obtenerMiembrosDeNegocio, obtenerPerfilesDeUsuarios } from '@/services/businessService'
-import { formatCurrency } from '@/data/mockData'
+import { formatCurrency } from '@/utils/format'
 import type { PaymentOrder, PaymentVerificationStatus } from '@/types/payments'
 import type { Order } from '@/types/order'
 
@@ -69,9 +69,8 @@ export default function PaymentVerification() {
         }
 
         const entries = Object.entries(data) as [string, any][]
-        const withPayment = entries.filter(([, o]) => o.payment != null)
 
-        const mapped: PaymentOrder[] = withPayment.map(([id, raw]) => {
+        const mapped: PaymentOrder[] = entries.map(([id, raw]) => {
           const order: Order = { id, ...raw }
           return mapOrderToPaymentOrder(order)
         })

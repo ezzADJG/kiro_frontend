@@ -16,7 +16,9 @@ import {
   DELIVERY_STATUS_LABELS,
   SHIPPING_METHOD_LABELS,
 } from '@/types/payments'
-import { formatCurrency, formatDate, mockAgencies, mockShalomProducts } from '@/data/mockData'
+import { formatCurrency, formatDate } from '@/utils/format'
+import { useAgencias } from '@/hooks/useAgencias'
+import { SHALOM_PRODUCTS } from '@/data/shalomProducts'
 
 interface EmployeeOption {
   id: string
@@ -89,6 +91,7 @@ export default function OrderDetailsPanel({
 }: OrderDetailsPanelProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [reassignOpen, setReassignOpen] = useState(false)
+  const { agencias } = useAgencias()
 
   if (!order) return null
 
@@ -137,9 +140,9 @@ export default function OrderDetailsPanel({
   const approvedBy = deliveryOrder?.approvedBy ?? null
   const approvedAt = deliveryOrder?.approvedAt ?? null
 
-  const originAgency = shalomData ? mockAgencies.find((a) => a.id === shalomData.origin_terminal_id) : null
-  const destinyAgency = shalomData ? mockAgencies.find((a) => a.id === shalomData.destiny_terminal_id) : null
-  const shalomProduct = shalomData ? mockShalomProducts.find((p) => p.id === shalomData.product_id) : null
+  const originAgency = shalomData ? agencias.find((a) => a.id === shalomData.origin_terminal_id) : null
+  const destinyAgency = shalomData ? agencias.find((a) => a.id === shalomData.destiny_terminal_id) : null
+  const shalomProduct = shalomData ? SHALOM_PRODUCTS.find((p) => p.id === shalomData.product_id) : null
 
   const renderFooter = () => {
     if (isPayment) {

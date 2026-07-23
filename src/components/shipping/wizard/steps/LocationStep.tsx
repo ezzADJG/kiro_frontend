@@ -31,7 +31,8 @@ export function LocationStep({
   agencias,
 }: LocationStepProps) {
   const departamentos = useMemo(
-    () => [...new Set(agencias.map((a) => a.departamento))].sort(),
+    () =>
+      [...new Set(agencias.map((a) => a.departamento).filter(Boolean))].sort(),
     [agencias]
   )
 
@@ -40,7 +41,9 @@ export function LocationStep({
       [
         ...new Set(
           agencias
-            .filter((a) => a.departamento === data.departamento)
+            .filter(
+              (a) => a.departamento === data.departamento && a.provincia
+            )
             .map((a) => a.provincia)
         ),
       ].sort(),
@@ -52,7 +55,7 @@ export function LocationStep({
       [
         ...new Set(
           agencias
-            .filter((a) => a.provincia === data.provincia)
+            .filter((a) => a.provincia === data.provincia && a.distrito)
             .map((a) => a.distrito)
         ),
       ].sort(),

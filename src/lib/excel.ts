@@ -521,20 +521,35 @@ export async function exportToShalomExcel(
 
   const originAgency = config?.shalom?.agenciaSeleccionada?.nombre || ''
 
+  // Build agency ID → name lookup from Hoja2 sheet
+  const ws2 = workbook.getWorksheet('Hoja2')
+  const agencyIdToName: Record<number, string> = {}
+  if (ws2) {
+    ws2.eachRow((row, rowNumber) => {
+      if (rowNumber >= 1) {
+        const id = Number(row.getCell(1).value)
+        const name = String(row.getCell(2).value || '').trim()
+        if (id && name) {
+          agencyIdToName[id] = name
+        }
+      }
+    })
+  }
+
   for (let i = 0; i < orders.length; i++) {
     const order = orders[i]
     const sd = shippingDataMap[order.id]?.datosEnvio as Record<string, any> | undefined
     const row = ws.getRow(i + 2)
 
-    row.getCell(2).value = safe(sd?.documentoDestinatario || order.customerDNI)
-    row.getCell(3).value = safe(sd?.telefonoDestinatario || order.customerPhone)
-    row.getCell(4).value = safe(sd?.documentoContacto || sd?.documentoDestinatario || order.customerDNI)
-    row.getCell(5).value = safe(sd?.telefonoContacto || sd?.telefonoDestinatario || order.customerPhone)
-    row.getCell(6).value = safe(order.purchaseNumber)
-    row.getCell(7).value = safe(originAgency)
-    row.getCell(8).value = safe(sd?.agenciaDestino || '')
-    row.getCell(9).value = safe(sd?.descripcionMercaderia || productsDescription(order.products))
-    row.getCell(14).value = 1
+    row.getCell(1).value = safe(sd?.documentoDestinatario || order.customerDNI)
+    row.getCell(2).value = safe(sd?.telefonoDestinatario || order.customerPhone)
+    row.getCell(3).value = safe(sd?.documentoContacto || sd?.documentoDestinatario || order.customerDNI)
+    row.getCell(4).value = safe(sd?.telefonoContacto || sd?.telefonoDestinatario || order.customerPhone)
+    row.getCell(5).value = safe(order.purchaseNumber)
+    row.getCell(6).value = safe(originAgency)
+    row.getCell(7).value = safe(sd?.agenciaDestino ? agencyIdToName[Number(sd.agenciaDestino)] : '')
+    row.getCell(8).value = safe(sd?.descripcionMercaderia || productsDescription(order.products))
+    row.getCell(13).value = 1
 
     row.commit()
   }

@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Package, MapPin, Building2, Hash, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { mockAgencies, mockShalomProducts, storeProfile } from '@/data/mockData'
-import type { ShalomOrderPayload, ShalomTracking, DeliveryOrder } from '@/types/payments'
+import { useAgencias } from '@/hooks/useAgencias'
+import { useBusiness } from '@/context/BusinessContext'
+import { obtenerNegocio } from '@/services/businessService'
+import { SHALOM_PRODUCTS } from '@/data/shalomProducts'
+import type { ShalomOrderPayload, ShalomTracking, DeliveryOrder, StoreProfile } from '@/types/payments'
 
 interface ShalomShippingModalProps {
   open: boolean
@@ -35,10 +38,37 @@ export default function ShalomShippingModal({ open, onClose, onGenerate, order }
   const [heightM, setHeightM] = useState(0.2)
   const [lengthM, setLengthM] = useState(0.3)
   const [widthM, setWidthM] = useState(0.2)
+  const { agencias } = useAgencias()
+  const { activeBusinessId } = useBusiness()
+  const [senderProfile, setSenderProfile] = useState<StoreProfile | null>(null)
+
+  useEffect(() => {
+    if (!activeBusinessId) return
+    let active = true
+    obtenerNegocio(activeBusinessId).then((biz) => {
+      if (!active || !biz) return
+      setSenderProfile({
+        name: biz.businessName,
+        document_type: 'RUC',
+        document: biz.ruc,
+        last_name: '',
+        sur_name: '',
+        phone: Number(biz.phone) || 0,
+        email: biz.email,
+        address: [
+          biz.address.street,
+          biz.address.district,
+          biz.address.province,
+          biz.address.department,
+        ].filter(Boolean).join(', '),
+      })
+    })
+    return () => { active = false }
+  }, [activeBusinessId])
 
   if (!open) return null
 
-  const selectedProduct = mockShalomProducts.find((p) => p.id === productId)
+  const selectedProduct = SHALOM_PRODUCTS.find((p) => p.id === productId)
   const isOtraMedida = selectedProduct?.title === 'Otra Medida'
 
   const handleProductSelect = (id: number) => {
@@ -72,14 +102,14 @@ export default function ShalomShippingModal({ open, onClose, onGenerate, order }
       payer,
       pickup_code: pickupCode,
       sender: {
-        document_type: storeProfile.document_type,
-        document: storeProfile.document,
-        name: storeProfile.name,
+        document_type: senderProfile?.document_type ?? 'RUC',
+        document: senderProfile?.document ?? '',
+        name: senderProfile?.name ?? '',
         last_name: '',
         sur_name: '',
-        phone: storeProfile.phone,
-        email: storeProfile.email,
-        address: storeProfile.address,
+        phone: senderProfile?.phone ?? 0,
+        email: senderProfile?.email ?? '',
+        address: senderProfile?.address ?? '',
       },
       receiver: {
         document_type: receiverDocType,
@@ -109,7 +139,7 @@ export default function ShalomShippingModal({ open, onClose, onGenerate, order }
     if (showSelector !== type) return null
 
     if (type === 'origin' || type === 'destiny') {
-      const list = mockAgencies
+      const list = agencias
       const handleSelect = (id: number) => {
         if (type === 'origin') setOriginId(id)
         else setDestinyId(id)
@@ -167,7 +197,7 @@ export default function ShalomShippingModal({ open, onClose, onGenerate, order }
                 <button onClick={() => setShowSelector(null)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"><X className="h-4 w-4" /></button>
               </div>
               <div className="max-h-64 space-y-1 overflow-y-auto p-3">
-                {mockShalomProducts.map((p) => (
+                {SHALOM_PRODUCTS.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => handleProductSelect(p.id)}
@@ -234,7 +264,7 @@ export default function ShalomShippingModal({ open, onClose, onGenerate, order }
                     >
                       <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <span className={originId ? 'text-foreground' : 'text-muted-foreground'}>
-                        {originId ? mockAgencies.find((a) => a.id === originId)?.nombre : 'Seleccionar'}
+                        {originId ? agencias.find((a) => a.id === originId)?.nombre : 'Seleccionar'}
                       </span>
                     </button>
                   </div>
@@ -246,7 +276,7 @@ export default function ShalomShippingModal({ open, onClose, onGenerate, order }
                     >
                       <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <span className={destinyId ? 'text-foreground' : 'text-muted-foreground'}>
-                        {destinyId ? mockAgencies.find((a) => a.id === destinyId)?.nombre : 'Seleccionar'}
+                        {destinyId ? agencias.find((a) => a.id === destinyId)?.nombre : 'Seleccionar'}
                       </span>
                     </button>
                   </div>
@@ -337,9 +367,9 @@ export default function ShalomShippingModal({ open, onClose, onGenerate, order }
                       <Building2 className="h-4 w-4" />
                     </div>
                     <div className="flex-1 space-y-0.5">
-                      <p className="text-sm font-medium text-foreground">{storeProfile.name}</p>
-                      <p className="text-xs text-muted-foreground">{storeProfile.document_type}: {storeProfile.document}</p>
-                      <p className="text-xs text-muted-foreground">{storeProfile.address}</p>
+                      <p className="text-sm font-medium text-foreground">{senderProfile?.name || '—'}</p>
+                      <p className="text-xs text-muted-foreground">{senderProfile?.document_type}: {senderProfile?.document || '—'}</p>
+                      <p className="text-xs text-muted-foreground">{senderProfile?.address || '—'}</p>
                     </div>
                   </div>
                 </div>

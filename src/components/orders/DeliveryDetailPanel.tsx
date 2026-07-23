@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import SlidePanel from './SlidePanel'
 import type { DeliveryOrder, ShippingMethod } from '@/types/payments'
 import { PAYMENT_METHOD_LABELS, DELIVERY_STATUS_LABELS, SHIPPING_METHOD_LABELS } from '@/types/payments'
-import { formatCurrency, formatDate, formatTime } from '@/data/mockData'
-import { mockAgencies, mockShalomProducts } from '@/data/mockData'
+import { formatCurrency, formatDate, formatTime } from '@/utils/format'
+import { useAgencias } from '@/hooks/useAgencias'
+import { SHALOM_PRODUCTS } from '@/data/shalomProducts'
 
 interface DeliveryDetailPanelProps {
   open: boolean
@@ -46,6 +47,7 @@ export default function DeliveryDetailPanel({
   onOpenDriverAssignment,
 }: DeliveryDetailPanelProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const { agencias } = useAgencias()
 
   if (!order) return null
 
@@ -63,9 +65,9 @@ export default function DeliveryDetailPanel({
   }
 
   const sd = order.shalomData
-  const originAgency = sd ? mockAgencies.find((a) => a.id === sd.origin_terminal_id) : null
-  const destinyAgency = sd ? mockAgencies.find((a) => a.id === sd.destiny_terminal_id) : null
-  const shalomProduct = sd ? mockShalomProducts.find((p) => p.id === sd.product_id) : null
+  const originAgency = sd ? agencias.find((a) => a.id === sd.origin_terminal_id) : null
+  const destinyAgency = sd ? agencias.find((a) => a.id === sd.destiny_terminal_id) : null
+  const shalomProduct = sd ? SHALOM_PRODUCTS.find((p) => p.id === sd.product_id) : null
 
   const renderFooter = () => {
     switch (order.deliveryStatus) {

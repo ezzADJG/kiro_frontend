@@ -5,7 +5,7 @@ import SlidePanel from './SlidePanel'
 import ReassignModal from './ReassignModal'
 import type { PaymentOrder } from '@/types/payments'
 import { PAYMENT_METHOD_LABELS, PAYMENT_VERIFICATION_STATUS_LABELS } from '@/types/payments'
-import { formatCurrency, formatDate } from '@/data/mockData'
+import { formatCurrency, formatDate } from '@/utils/format'
 
 interface EmployeeOption {
   id: string

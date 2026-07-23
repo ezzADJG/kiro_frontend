@@ -1,22 +1,23 @@
 import { useState } from 'react'
 import { X, Truck, Check, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { mockDrivers } from '@/data/mockData'
+import type { Driver } from '@/types/payments'
 
 interface AssignDriverModalProps {
   open: boolean
   onClose: () => void
   onAssign: (driverId: string, driverName: string) => void
   currentOrderNumber: string
+  drivers?: Driver[]
 }
 
-export default function AssignDriverModal({ open, onClose, onAssign, currentOrderNumber }: AssignDriverModalProps) {
+export default function AssignDriverModal({ open, onClose, onAssign, currentOrderNumber, drivers = [] }: AssignDriverModalProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   if (!open) return null
 
   const handleAssign = () => {
-    const drv = mockDrivers.find((d) => d.id === selectedId)
+    const drv = drivers.find((d) => d.id === selectedId)
     if (drv) {
       onAssign(drv.id, drv.name)
       setSelectedId(null)
@@ -47,32 +48,39 @@ export default function AssignDriverModal({ open, onClose, onAssign, currentOrde
             <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Seleccionar conductor motorizado
             </p>
-            <div className="space-y-1.5">
-              {mockDrivers.map((drv) => (
-                <button
-                  key={drv.id}
-                  onClick={() => setSelectedId(drv.id)}
-                  className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors ${
-                    selectedId === drv.id
-                      ? 'bg-muted ring-1 ring-foreground/20'
-                      : 'hover:bg-secondary ring-1 ring-foreground/5'
-                  }`}
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-muted-foreground ring-1 ring-foreground/10">
-                    <Truck className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{drv.name}</p>
-                    <p className="text-xs text-muted-foreground">{drv.vehicle} · {drv.phone}</p>
-                  </div>
-                  {selectedId === drv.id && (
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <Check className="h-3.5 w-3.5" />
+            {drivers.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
+                <Truck className="h-8 w-8 text-muted-foreground/30" />
+                <p>No hay motorizados configurados</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {drivers.map((drv) => (
+                  <button
+                    key={drv.id}
+                    onClick={() => setSelectedId(drv.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors ${
+                      selectedId === drv.id
+                        ? 'bg-muted ring-1 ring-foreground/20'
+                        : 'hover:bg-secondary ring-1 ring-foreground/5'
+                    }`}
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-muted-foreground ring-1 ring-foreground/10">
+                      <Truck className="h-4 w-4" />
                     </div>
-                  )}
-                </button>
-              ))}
-            </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">{drv.name}</p>
+                      <p className="text-xs text-muted-foreground">{drv.vehicle} · {drv.phone}</p>
+                    </div>
+                    {selectedId === drv.id && (
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <Check className="h-3.5 w-3.5" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
             <Button variant="outline" size="sm" onClick={onClose}>
@@ -81,7 +89,7 @@ export default function AssignDriverModal({ open, onClose, onAssign, currentOrde
             <Button
               size="sm"
               className="gap-1.5"
-              disabled={!selectedId}
+              disabled={!selectedId || drivers.length === 0}
               onClick={handleAssign}
             >
               <ArrowRight className="h-3.5 w-3.5" />

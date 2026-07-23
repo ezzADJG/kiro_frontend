@@ -26,7 +26,7 @@ import {
   DELIVERY_STATUS_LABELS, DELIVERY_STATUS_DOT, DELIVERY_STATUS_TEXT,
   SHIPPING_METHOD_LABELS,
 } from '@/types/payments'
-import { formatCurrency, formatTime, formatDate } from '@/data/mockData'
+import { formatCurrency, formatTime, formatDate } from '@/utils/format'
 import type { DeliveryOrder, ShippingMethod, ShalomOrderPayload, ShalomTracking, OlvaTracking } from '@/types/payments'
 import type { Order } from '@/types/order'
 import type { ShippingConfig } from '@/services/shippingConfigService'
